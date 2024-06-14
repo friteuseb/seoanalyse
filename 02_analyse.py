@@ -7,9 +7,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import nltk
 from nltk.corpus import stopwords
 import json
-import socketserver
-import http.server
-import threading
 
 nltk.download('stopwords')
 
@@ -70,63 +67,11 @@ def save_results_to_json(crawl_id, urls, clusters, labels, file_name='network.js
         }
         nodes.append(node)
     
-    graph = {"nodes": nodes, "links": []}  # Assuming links can be added later
+    graph = {"nodes": nodes, "links": []}
     
     with open(file_name, 'w') as f:
         json.dump(graph, f)
     print(f"Network graph saved to {file_name}")
-
-def create_html():
-    html_content = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>3D Force Graph</title>
-        <style>
-            body { margin: 0; }
-            canvas { display: block; }
-        </style>
-    </head>
-    <body>
-        <script src="https://unpkg.com/three@0.135.0/build/three.min.js"></script>
-        <script src="https://unpkg.com/3d-force-graph"></script>
-        <script src="https://unpkg.com/three-spritetext"></script>
-        <script>
-            const Graph = ForceGraph3D()
-                (document.body)
-                .jsonUrl('network.json')
-                .nodeLabel('label')
-                .nodeAutoColorBy('cluster')
-                .nodeThreeObjectExtend(true)
-                .nodeThreeObject(node => {
-                    const sprite = new SpriteText(node.label);
-                    sprite.color = node.color;
-                    sprite.textHeight = 8;
-                    return sprite;
-                })
-                .onNodeClick(node => {
-                    window.open(node.id, "_blank");
-                })
-                .onNodeHover(node => {
-                    document.body.style.cursor = node ? 'pointer' : 'auto';
-                })
-                .nodeRelSize(4)
-                .linkDirectionalParticles(2)
-                .linkDirectionalParticleWidth(2);
-        </script>
-    </body>
-    </html>
-    """
-    with open("index.html", "w") as f:
-        f.write(html_content)
-
-def run_http_server():
-    PORT = 8000
-    Handler = http.server.SimpleHTTPRequestHandler
-
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        print(f"Serving at port {PORT}")
-        httpd.serve_forever()
 
 def list_crawls():
     keys = r.keys('*:doc_count')
@@ -167,12 +112,7 @@ def main():
     print("Saving results to JSON...")
     save_results_to_json(crawl_id, urls, clusters, labels)
     
-    print("Creating HTML file for visualization...")
-    create_html()
-    
-    print("Starting HTTP server for visualization...")
-    threading.Thread(target=run_http_server, daemon=True).start()
-    input("Press Enter to exit...\n")
+    print("Analysis complete. You can now visualize the results using the HTML file.")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3D Force Graph</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://unpkg.com/three@0.135.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/3d-force-graph"></script>
+    <script src="https://unpkg.com/three-spritetext"></script>
+    <script>
+        fetch('network.json')
+            .then(response => response.json())
+            .then(data => {
+                // Créez des liens pour regrouper les points par cluster
+                const links = [];
+                const clusterNodes = {};
+
+                data.nodes.forEach(node => {
+                    if (!clusterNodes[node.cluster]) {
+                        clusterNodes[node.cluster] = [];
+                    }
+                    clusterNodes[node.cluster].push(node);
+                });
+
+                Object.values(clusterNodes).forEach(nodes => {
+                    for (let i = 0; i < nodes.length - 1; i++) {
+                        for (let j = i + 1; j < nodes.length; j++) {
+                            links.push({ source: nodes[i].id, target: nodes[j].id });
+                        }
+                    }
+                });
+
+                data.links = links;
+
+                const Graph = ForceGraph3D()
+                    (document.body)
+                    .graphData(data)
+                    .nodeLabel('label')
+                    .nodeAutoColorBy('cluster')
+                    .nodeThreeObjectExtend(true)
+                    .nodeThreeObject(node => {
+                        const sprite = new SpriteText(node.label);
+                        sprite.color = node.color;
+                        sprite.textHeight = 8;
+                        return sprite;
+                    })
+                    .onNodeClick(node => {
+                        window.open(node.id, "_blank");
+                    })
+                    .onNodeHover(node => {
+                        document.body.style.cursor = node ? 'pointer' : 'auto';
+                    })
+                    .nodeRelSize(4)
+                    .linkDirectionalParticles(2)
+                    .linkDirectionalParticleWidth(2);
+            });
+    </script>
+</body>
+</html>

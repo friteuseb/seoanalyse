@@ -9,53 +9,31 @@
         </style>
     </head>
     <body>
-        <script src="https://unpkg.com/three@0.124.0/build/three.min.js"></script>
+        <script src="https://unpkg.com/three@0.135.0/build/three.min.js"></script>
         <script src="https://unpkg.com/3d-force-graph"></script>
         <script src="https://unpkg.com/three-spritetext"></script>
         <script>
-            fetch('network.json')
-                .then(response => response.json())
-                .then(data => {
-                    const Graph = ForceGraph3D()
-                        (document.body)
-                        .graphData(data)
-                        .nodeLabel('label')
-                        .nodeAutoColorBy('cluster')
-                        .nodeThreeObject(node => {
-                            const sprite = new SpriteText(node.label);
-                            sprite.color = node.color;
-                            sprite.textHeight = 8;
-                            return sprite;
-                        })
-                        .onNodeClick(node => {
-                            window.open(node.id, "_blank");
-                        })
-                        .nodeRelSize(4)
-                        .linkDirectionalParticles(2)
-                        .linkDirectionalParticleWidth(2)
-                        .onNodeHover(node => {
-                            document.body.style.cursor = node ? 'pointer' : null;
-                            if (node) {
-                                const tooltip = document.createElement('div');
-                                tooltip.style.position = 'fixed';
-                                tooltip.style.top = `${event.clientY + 5}px`;
-                                tooltip.style.left = `${event.clientX + 5}px`;
-                                tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                                tooltip.style.color = 'white';
-                                tooltip.style.padding = '5px';
-                                tooltip.style.borderRadius = '5px';
-                                tooltip.style.zIndex = '1000';
-                                tooltip.textContent = `Thème: ${node.label}, Mots: ${node.words}`;
-                                tooltip.id = 'tooltip';
-                                document.body.appendChild(tooltip);
-                            } else {
-                                const tooltip = document.getElementById('tooltip');
-                                if (tooltip) {
-                                    tooltip.remove();
-                                }
-                            }
-                        });
-                });
+            const Graph = ForceGraph3D()
+                (document.body)
+                .jsonUrl('network.json')
+                .nodeLabel('label')
+                .nodeAutoColorBy('cluster')
+                .nodeThreeObjectExtend(true)
+                .nodeThreeObject(node => {
+                    const sprite = new SpriteText(node.label);
+                    sprite.color = node.color;
+                    sprite.textHeight = 8;
+                    return sprite;
+                })
+                .onNodeClick(node => {
+                    window.open(node.id, "_blank");
+                })
+                .onNodeHover(node => {
+                    document.body.style.cursor = node ? 'pointer' : 'auto';
+                })
+                .nodeRelSize(4)
+                .linkDirectionalParticles(2)
+                .linkDirectionalParticleWidth(2);
         </script>
     </body>
     </html>

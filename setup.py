@@ -20,6 +20,12 @@ setup(
     entry_points={
         'console_scripts': [
             'webcrawler=crawl:main',
+            'analyse=analyse:main',
+            'visualize=3d-force-graph:main',
         ],
     },
 )
+
+# Post-installation script to download NLTK stopwords
+import nltk
+nltk.download('stopwords')

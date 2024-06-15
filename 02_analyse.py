@@ -8,6 +8,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import json
 import nltk
 from nltk.corpus import stopwords
+import os
+import time
 import sys
 
 nltk.download('stopwords')
@@ -27,12 +29,13 @@ def list_crawls():
         crawls[crawl_id] = r.get(key).decode('utf-8')
     return crawls
 
-def select_crawl(crawl_id):
+def select_crawl():
     crawls = list_crawls()
-    if crawl_id in crawls:
-        return crawl_id
-    print("Invalid crawl ID.")
-    sys.exit(1)
+    print("Available crawls:")
+    for i, (crawl_id, count) in enumerate(crawls.items(), 1):
+        print(f"{i}. {crawl_id} (Documents: {count})")
+    selected = int(input("Select the crawl number to analyze: ")) - 1
+    return list(crawls.keys())[selected]
 
 def get_documents_from_redis(crawl_id):
     documents = []
@@ -51,19 +54,31 @@ def get_documents_from_redis(crawl_id):
     return documents
 
 def compute_embeddings(contents):
-    return model.encode(contents)
+    print("Starting embeddings computation...")
+    start_time = time.time()
+    embeddings = model.encode(contents)
+    print(f"Embeddings computed in {time.time() - start_time:.2f} seconds.")
+    return embeddings
 
 def cluster_embeddings(embeddings, n_clusters=5):
+    print("Starting clustering...")
+    start_time = time.time()
     kmeans = KMeans(n_clusters=n_clusters)
     clusters = kmeans.fit_predict(embeddings)
+    print(f"Clustering completed in {time.time() - start_time:.2f} seconds.")
     return clusters, kmeans
 
 def reduce_dimensions(embeddings):
+    print("Starting dimensionality reduction...")
+    start_time = time.time()
     pca = PCA(n_components=2)
     reduced_embeddings = pca.fit_transform(embeddings)
+    print(f"Dimensionality reduction completed in {time.time() - start_time:.2f} seconds.")
     return reduced_embeddings
 
 def determine_cluster_labels(contents, clusters, n_clusters=5):
+    print("Starting cluster label determination...")
+    start_time = time.time()
     vectorizer = TfidfVectorizer(stop_words=french_stop_words)
     X = vectorizer.fit_transform(contents)
     terms = vectorizer.get_feature_names_out()
@@ -75,15 +90,21 @@ def determine_cluster_labels(contents, clusters, n_clusters=5):
         top_terms = [terms[idx] for idx in sorted_indices[:5]]
         labels.append(' '.join(top_terms))
     
+    print(f"Cluster labels determined in {time.time() - start_time:.2f} seconds.")
     return labels
 
 def save_results_to_redis(crawl_id, documents, clusters, labels):
+    print("Starting to save results to Redis...")
+    start_time = time.time()
     for i, doc in enumerate(documents):
         doc_id = doc["doc_id"]
         r.hset(doc_id, "cluster", int(clusters[i]))
         r.hset(doc_id, "label", labels[clusters[i]])
+    print(f"Results saved to Redis in {time.time() - start_time:.2f} seconds.")
 
-def save_network_to_json(documents, clusters, labels, filename="network.json"):
+def save_network_to_json(documents, clusters, labels, filename="visualizations/network.json"):
+    print("Starting to save network graph to JSON...")
+    start_time = time.time()
     nodes = []
     links = []
     url_to_id = {doc["url"]: doc["doc_id"] for doc in documents}
@@ -103,12 +124,14 @@ def save_network_to_json(documents, clusters, labels, filename="network.json"):
                 })
 
     graph = {"nodes": nodes, "links": links}
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, "w") as f:
         json.dump(graph, f)
-    print(f"Network graph saved to {filename}")
+    print(f"Network graph saved to {filename} in {time.time() - start_time:.2f} seconds.")
 
-def main(crawl_id):
-    crawl_id = select_crawl(crawl_id)
+def main(crawl_id=None):
+    if crawl_id is None:
+        crawl_id = select_crawl()
     documents = get_documents_from_redis(crawl_id)
     
     if not documents:
@@ -117,28 +140,17 @@ def main(crawl_id):
     
     contents = [doc["content"] for doc in documents]
     
-    print("Computing embeddings...")
     embeddings = compute_embeddings(contents)
-    
-    print("Clustering embeddings...")
     clusters, kmeans = cluster_embeddings(embeddings, n_clusters=5)
-    
-    print("Reducing dimensions for visualization...")
     reduced_embeddings = reduce_dimensions(embeddings)
-    
-    print("Determining cluster labels...")
     labels = determine_cluster_labels(contents, clusters, n_clusters=5)
     
-    print("Saving results to Redis...")
     save_results_to_redis(crawl_id, documents, clusters, labels)
-    
-    print("Saving network graph to JSON...")
     save_network_to_json(documents, clusters, labels)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 02_analyse.py <Crawl_ID>")
-        sys.exit(1)
-    
-    crawl_id = sys.argv[1]
-    main(crawl_id)
+    if len(sys.argv) > 1:
+        crawl_id = sys.argv[1]
+        main(crawl_id)
+    else:
+        main()

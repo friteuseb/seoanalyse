@@ -1,8 +1,8 @@
 import redis
 import trafilatura
 from trafilatura.sitemaps import sitemap_search
-from urllib.parse import urlparse
 import uuid
+import sys
 
 # Connexion à Redis
 r = redis.Redis(host='localhost', port=6379, db=0)
@@ -14,7 +14,7 @@ def crawl_site(url):
 
 def save_to_redis(url, content, crawl_id):
     doc_id = f"{crawl_id}:doc:{r.incr(f'{crawl_id}:doc_count')}"
-    r.hmset(doc_id, {
+    r.hset(doc_id, mapping={
         "url": url,
         "content": content,
     })
@@ -36,8 +36,11 @@ def crawl_and_store(url, crawl_id):
         process_site(url, crawl_id)
 
 if __name__ == "__main__":
-    url = input("Entrez l'URL du site à crawler: ")
-    parsed_url = urlparse(url)
-    crawl_id = f"{parsed_url.netloc.replace('.', '_')}_{uuid.uuid4()}"
+    if len(sys.argv) != 2:
+        print("Usage: python3 01_crawl.py <URL>")
+        sys.exit(1)
+    
+    url = sys.argv[1]
+    crawl_id = f"{url.split('//')[1].replace('.', '_').replace('/', '_')}_{str(uuid.uuid4())}"
     crawl_and_store(url, crawl_id)
     print(f"Crawl terminé. ID du crawl: {crawl_id}")

@@ -2,71 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Graph Visualization with D3.js</title>
+    <title>Internal Links Graph Visualization</title>
     <style>
-        body { margin: 0; font-family: Arial, sans-serif; }
+        body { margin: 0; }
         svg { width: 100vw; height: 100vh; display: block; }
         .node text { pointer-events: none; font-size: 12px; fill: #333; }
         .legend { font-family: Arial, sans-serif; font-size: 14px; position: absolute; top: 10px; left: 10px; background: white; padding: 10px; border: 1px solid #ccc; }
         .legend div { margin-bottom: 5px; }
         .legend rect { stroke: black; stroke-width: 2px; }
-        .controls { position: absolute; top: 10px; right: 10px; background: white; padding: 10px; border: 1px solid #ccc; }
-        .controls label { display: block; margin-bottom: 5px; }
-        .tooltip {
-            position: absolute;
-            text-align: center;
-            width: auto;
-            height: auto;
-            padding: 5px;
-            font: 12px sans-serif;
-            background: lightsteelblue;
-            border: 0;
-            border-radius: 8px;
-            pointer-events: none;
-            opacity: 0;
-        }
     </style>
 </head>
 <body>
     <svg></svg>
     <div class="legend"></div>
-    <div class="controls">
-        <label>Link Distance: <input type="range" id="linkDistance" min="10" max="300" value="100"></label>
-        <label>Repulsion Force: <input type="range" id="repulsionForce" min="-1000" max="0" value="-300"></label>
-        <label>Collision Radius: <input type="range" id="collisionRadius" min="0" max="100" value="50"></label>
-        <button id="downloadPDF">Download PDF</button>
-    </div>
-    <div class="tooltip" id="tooltip"></div>
 
-    <!-- Inclusion de D3.js et jsPDF -->
+    <!-- Inclusion de D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>
         function getLastSegment(url) {
             return url.split('/').filter(Boolean).pop();
         }
-
-        function generatePDF() {
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF();
-
-            document.body.classList.add('pdf-style');
-
-            html2canvas(document.querySelector('svg')).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                pdf.addImage(imgData, 'PNG', 10, 10, 190, 90);
-                pdf.save('graph.pdf');
-                document.body.classList.remove('pdf-style');
-            }).catch(error => {
-                console.error('Error capturing the graph for PDF:', error);
-                document.body.classList.remove('pdf-style');
-            });
-        }
-
-        document.getElementById('downloadPDF').addEventListener('click', generatePDF);
-
-        const tooltip = d3.select('#tooltip');
 
         // Charger les données JSON
         fetch('network.json')
@@ -110,19 +65,6 @@
                     .enter().append('g')
                     .on('click', (event, d) => {
                         window.open(d.id, '_blank');
-                    })
-                    .on('mouseover', (event, d) => {
-                        tooltip.transition()
-                            .duration(200)
-                            .style('opacity', .9);
-                        tooltip.html(`<strong>Title:</strong> ${d.title}<br><strong>URL:</strong> ${d.id}`)
-                            .style('left', (event.pageX + 5) + 'px')
-                            .style('top', (event.pageY - 28) + 'px');
-                    })
-                    .on('mouseout', (event, d) => {
-                        tooltip.transition()
-                            .duration(500)
-                            .style('opacity', 0);
                     });
 
                 node.append('circle')
@@ -208,22 +150,6 @@
                     .append('path')
                     .attr('d', 'M0,-5L10,0L0,5')
                     .attr('fill', '#aaa');
-
-                // Event listeners for controls
-                document.getElementById('linkDistance').addEventListener('input', function() {
-                    simulation.force('link').distance(+this.value);
-                    simulation.alpha(1).restart();
-                });
-
-                document.getElementById('repulsionForce').addEventListener('input', function() {
-                    simulation.force('charge').strength(+this.value);
-                    simulation.alpha(1).restart();
-                });
-
-                document.getElementById('collisionRadius').addEventListener('input', function() {
-                    simulation.force('collision').radius(+this.value);
-                    simulation.alpha(1).restart();
-                });
             })
             .catch(error => console.error('Error loading the network graph:', error));
     </script>

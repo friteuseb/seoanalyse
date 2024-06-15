@@ -8,6 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import json
 import nltk
 from nltk.corpus import stopwords
+import sys
 
 nltk.download('stopwords')
 
@@ -26,27 +27,21 @@ def list_crawls():
         crawls[crawl_id] = r.get(key).decode('utf-8')
     return crawls
 
-def select_crawl():
+def select_crawl(crawl_id):
     crawls = list_crawls()
-    print("Available crawls:")
-    for i, (crawl_id, count) in enumerate(crawls.items(), 1):
-        print(f"{i}. {crawl_id} (Documents: {count})")
-    selected = int(input("Select the crawl number to analyze: ")) - 1
-    return list(crawls.keys())[selected]
-
-def normalize_url(url):
-    if url.endswith('/'):
-        return url[:-1]
-    return url
+    if crawl_id in crawls:
+        return crawl_id
+    print("Invalid crawl ID.")
+    sys.exit(1)
 
 def get_documents_from_redis(crawl_id):
     documents = []
     for key in r.scan_iter(f"{crawl_id}:doc:*"):
         doc_data = r.hgetall(key)
         doc_id = key.decode('utf-8')
-        url = normalize_url(doc_data[b'url'].decode('utf-8'))
+        url = doc_data[b'url'].decode('utf-8')
         content = doc_data[b'content'].decode('utf-8')
-        internal_links = [normalize_url(link) for link in doc_data.get(b'internal_links', b'').decode('utf-8').split(',')]
+        internal_links = doc_data.get(b'internal_links', b'').decode('utf-8').split(',')
         documents.append({
             "doc_id": doc_id,
             "url": url,
@@ -91,7 +86,7 @@ def save_results_to_redis(crawl_id, documents, clusters, labels):
 def save_network_to_json(documents, clusters, labels, filename="network.json"):
     nodes = []
     links = []
-    url_to_id = {normalize_url(doc["url"]): doc["doc_id"] for doc in documents}
+    url_to_id = {doc["url"]: doc["doc_id"] for doc in documents}
 
     for i, doc in enumerate(documents):
         nodes.append({
@@ -101,11 +96,10 @@ def save_network_to_json(documents, clusters, labels, filename="network.json"):
             "title": labels[clusters[i]]
         })
         for link in doc["internal_links"]:
-            normalized_link = normalize_url(link)
-            if normalized_link in url_to_id:
+            if link in url_to_id:
                 links.append({
                     "source": doc["url"],
-                    "target": normalized_link
+                    "target": link
                 })
 
     graph = {"nodes": nodes, "links": links}
@@ -113,8 +107,8 @@ def save_network_to_json(documents, clusters, labels, filename="network.json"):
         json.dump(graph, f)
     print(f"Network graph saved to {filename}")
 
-def main():
-    crawl_id = select_crawl()
+def main(crawl_id):
+    crawl_id = select_crawl(crawl_id)
     documents = get_documents_from_redis(crawl_id)
     
     if not documents:
@@ -142,4 +136,9 @@ def main():
     save_network_to_json(documents, clusters, labels)
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) != 2:
+        print("Usage: python3 02_analyse.py <Crawl_ID>")
+        sys.exit(1)
+    
+    crawl_id = sys.argv[1]
+    main(crawl_id)

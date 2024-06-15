@@ -1,33 +1,59 @@
 import redis
 import numpy as np
+import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
+import json
 import nltk
 from nltk.corpus import stopwords
-import json
 
 nltk.download('stopwords')
 
 # Connexion à Redis
 r = redis.Redis(host='localhost', port=6379, db=0)
 
-# Utiliser un modèle de transformation en français
 model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
+# Utilisation des stopwords français de NLTK
 french_stop_words = list(set(stopwords.words('french')))
 
+def list_crawls():
+    crawls = {}
+    for key in r.scan_iter("*:doc_count"):
+        crawl_id = key.decode('utf-8').split(':')[0]
+        crawls[crawl_id] = r.get(key).decode('utf-8')
+    return crawls
+
+def select_crawl():
+    crawls = list_crawls()
+    print("Available crawls:")
+    for i, (crawl_id, count) in enumerate(crawls.items(), 1):
+        print(f"{i}. {crawl_id} (Documents: {count})")
+    selected = int(input("Select the crawl number to analyze: ")) - 1
+    return list(crawls.keys())[selected]
+
+def normalize_url(url):
+    if url.endswith('/'):
+        return url[:-1]
+    return url
+
 def get_documents_from_redis(crawl_id):
-    urls = []
-    contents = []
+    documents = []
     for key in r.scan_iter(f"{crawl_id}:doc:*"):
         doc_data = r.hgetall(key)
-        url = doc_data[b'url'].decode('utf-8')
+        doc_id = key.decode('utf-8')
+        url = normalize_url(doc_data[b'url'].decode('utf-8'))
         content = doc_data[b'content'].decode('utf-8')
-        urls.append(url)
-        contents.append(content)
-    return urls, contents
+        internal_links = [normalize_url(link) for link in doc_data.get(b'internal_links', b'').decode('utf-8').split(',')]
+        documents.append({
+            "doc_id": doc_id,
+            "url": url,
+            "content": content,
+            "internal_links": internal_links
+        })
+    return documents
 
 def compute_embeddings(contents):
     return model.encode(contents)
@@ -49,53 +75,53 @@ def determine_cluster_labels(contents, clusters, n_clusters=5):
     
     labels = []
     for i in range(n_clusters):
-        cluster_center = np.asarray(X[clusters == i].mean(axis=0)).flatten()
+        cluster_center = X[clusters == i].mean(axis=0).A.flatten()
         sorted_indices = cluster_center.argsort()[::-1]
         top_terms = [terms[idx] for idx in sorted_indices[:5]]
         labels.append(' '.join(top_terms))
     
     return labels
 
-def save_results_to_json(crawl_id, urls, clusters, labels, file_name='network.json'):
-    nodes = []
-    for i, url in enumerate(urls):
-        node = {
-            "id": url,
-            "label": url.split('/')[-1],
-            "cluster": int(clusters[i]),
-            "title": labels[clusters[i]]
-        }
-        nodes.append(node)
-    
-    graph = {"nodes": nodes, "links": []}
-    
-    with open(file_name, 'w') as f:
-        json.dump(graph, f)
-    print(f"Network graph saved to {file_name}")
+def save_results_to_redis(crawl_id, documents, clusters, labels):
+    for i, doc in enumerate(documents):
+        doc_id = doc["doc_id"]
+        r.hset(doc_id, "cluster", int(clusters[i]))
+        r.hset(doc_id, "label", labels[clusters[i]])
 
-def list_crawls():
-    keys = r.keys('*:doc_count')
-    crawl_ids = [key.decode('utf-8').split(':')[0] for key in keys]
-    return crawl_ids
+def save_network_to_json(documents, clusters, labels, filename="network.json"):
+    nodes = []
+    links = []
+    url_to_id = {normalize_url(doc["url"]): doc["doc_id"] for doc in documents}
+
+    for i, doc in enumerate(documents):
+        nodes.append({
+            "id": doc["url"],
+            "label": doc["url"].split('/')[-1],
+            "group": int(clusters[i]),
+            "title": labels[clusters[i]]
+        })
+        for link in doc["internal_links"]:
+            normalized_link = normalize_url(link)
+            if normalized_link in url_to_id:
+                links.append({
+                    "source": doc["url"],
+                    "target": normalized_link
+                })
+
+    graph = {"nodes": nodes, "links": links}
+    with open(filename, "w") as f:
+        json.dump(graph, f)
+    print(f"Network graph saved to {filename}")
 
 def main():
-    crawl_ids = list_crawls()
-    if not crawl_ids:
-        print("No crawls found.")
+    crawl_id = select_crawl()
+    documents = get_documents_from_redis(crawl_id)
+    
+    if not documents:
+        print("No documents found for the given crawl ID.")
         return
     
-    print("Available crawls:")
-    for i, cid in enumerate(crawl_ids, 1):
-        print(f"{i}. {cid}")
-
-    crawl_idx = int(input("Select the crawl number to analyze: ")) - 1
-    crawl_id = crawl_ids[crawl_idx]
-
-    urls, contents = get_documents_from_redis(crawl_id)
-    
-    if not contents:
-        print("No content found for the given crawl ID.")
-        return
+    contents = [doc["content"] for doc in documents]
     
     print("Computing embeddings...")
     embeddings = compute_embeddings(contents)
@@ -109,10 +135,11 @@ def main():
     print("Determining cluster labels...")
     labels = determine_cluster_labels(contents, clusters, n_clusters=5)
     
-    print("Saving results to JSON...")
-    save_results_to_json(crawl_id, urls, clusters, labels)
+    print("Saving results to Redis...")
+    save_results_to_redis(crawl_id, documents, clusters, labels)
     
-    print("Analysis complete. You can now visualize the results using the HTML file.")
+    print("Saving network graph to JSON...")
+    save_network_to_json(documents, clusters, labels)
 
 if __name__ == "__main__":
     main()

@@ -1,63 +1,157 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>3D Force Graph</title>
+    <meta charset="UTF-8">
+    <title>Graph Visualization with D3.js</title>
     <style>
         body { margin: 0; }
-        canvas { display: block; }
+        svg { width: 100vw; height: 100vh; display: block; }
+        .node text { pointer-events: none; font-size: 12px; fill: #333; }
+        .legend { font-family: Arial, sans-serif; font-size: 14px; position: absolute; top: 10px; left: 10px; background: white; padding: 10px; border: 1px solid #ccc; }
+        .legend div { margin-bottom: 5px; }
+        .legend rect { stroke: black; stroke-width: 2px; }
     </style>
 </head>
 <body>
-    <script src="https://unpkg.com/three@0.135.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/3d-force-graph"></script>
-    <script src="https://unpkg.com/three-spritetext"></script>
+    <svg></svg>
+    <div class="legend"></div>
+
+    <!-- Inclusion de D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
+        function getLastSegment(url) {
+            return url.split('/').filter(Boolean).pop();
+        }
+
+        // Charger les données JSON
         fetch('network.json')
             .then(response => response.json())
             .then(data => {
-                // Créez des liens pour regrouper les points par cluster
-                const links = [];
-                const clusterNodes = {};
+                const svg = d3.select('svg');
+                const width = window.innerWidth;
+                const height = window.innerHeight;
 
-                data.nodes.forEach(node => {
-                    if (!clusterNodes[node.cluster]) {
-                        clusterNodes[node.cluster] = [];
-                    }
-                    clusterNodes[node.cluster].push(node);
+                const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+                const zoom = d3.zoom()
+                    .scaleExtent([0.1, 4])
+                    .on('zoom', (event) => {
+                        container.attr('transform', event.transform);
+                    });
+
+                const container = svg.append('g');
+
+                svg.call(zoom);
+
+                const simulation = d3.forceSimulation(data.nodes)
+                    .force('link', d3.forceLink(data.links).id(d => d.id).distance(100))
+                    .force('charge', d3.forceManyBody().strength(-300))
+                    .force('center', d3.forceCenter(width / 2, height / 2))
+                    .force('collision', d3.forceCollide().radius(50));
+
+                const link = container.append('g')
+                    .attr('class', 'links')
+                    .selectAll('line')
+                    .data(data.links)
+                    .enter().append('line')
+                    .attr('stroke-width', 1.5)
+                    .attr('stroke', '#aaa')
+                    .attr('marker-end', 'url(#arrow)'); // Définir les flèches
+
+                const node = container.append('g')
+                    .attr('class', 'nodes')
+                    .selectAll('g')
+                    .data(data.nodes)
+                    .enter().append('g')
+                    .on('click', (event, d) => {
+                        window.open(d.id, '_blank');
+                    });
+
+                node.append('circle')
+                    .attr('r', 10)
+                    .attr('fill', d => color(d.group))
+                    .attr('stroke', '#0078ff')
+                    .attr('stroke-width', 1.5)
+                    .call(d3.drag()
+                        .on('start', dragstarted)
+                        .on('drag', dragged)
+                        .on('end', dragended));
+
+                node.append('text')
+                    .attr('x', 12)
+                    .attr('dy', '.35em')
+                    .text(d => getLastSegment(d.id));
+
+                simulation.on('tick', () => {
+                    link
+                        .attr('x1', d => d.source.x)
+                        .attr('y1', d => d.source.y)
+                        .attr('x2', d => d.target.x)
+                        .attr('y2', d => d.target.y);
+
+                    node
+                        .attr('transform', d => `translate(${d.x},${d.y})`);
                 });
 
-                Object.values(clusterNodes).forEach(nodes => {
-                    for (let i = 0; i < nodes.length - 1; i++) {
-                        for (let j = i + 1; j < nodes.length; j++) {
-                            links.push({ source: nodes[i].id, target: nodes[j].id });
-                        }
-                    }
+                function dragstarted(event, d) {
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x;
+                    d.fy = d.y;
+                }
+
+                function dragged(event, d) {
+                    d.fx = event.x;
+                    d.fy = event.y;
+                }
+
+                function dragended(event, d) {
+                    if (!event.active) simulation.alphaTarget(0);
+                    d.fx = null;
+                    d.fy = null;
+                }
+
+                // Ajouter la légende
+                const legendData = [...new Set(data.nodes.map(d => d.group))].map(group => {
+                    const groupNode = data.nodes.find(d => d.group === group);
+                    return {
+                        group,
+                        color: color(group),
+                        name: groupNode ? groupNode.title : `Cluster ${group}`
+                    };
                 });
 
-                data.links = links;
+                const legend = d3.select('.legend')
+                    .selectAll('.legend-item')
+                    .data(legendData)
+                    .enter().append('div')
+                    .attr('class', 'legend-item')
+                    .style('display', 'flex')
+                    .style('align-items', 'center')
+                    .style('margin-bottom', '5px');
 
-                const Graph = ForceGraph3D()
-                    (document.body)
-                    .graphData(data)
-                    .nodeLabel('label')
-                    .nodeAutoColorBy('cluster')
-                    .nodeThreeObjectExtend(true)
-                    .nodeThreeObject(node => {
-                        const sprite = new SpriteText(node.label);
-                        sprite.color = node.color;
-                        sprite.textHeight = 8;
-                        return sprite;
-                    })
-                    .onNodeClick(node => {
-                        window.open(node.id, "_blank");
-                    })
-                    .onNodeHover(node => {
-                        document.body.style.cursor = node ? 'pointer' : 'auto';
-                    })
-                    .nodeRelSize(4)
-                    .linkDirectionalParticles(2)
-                    .linkDirectionalParticleWidth(2);
-            });
+                legend.append('div')
+                    .style('width', '20px')
+                    .style('height', '20px')
+                    .style('background-color', d => d.color)
+                    .style('margin-right', '5px');
+
+                legend.append('span')
+                    .text(d => d.name);
+
+                // Définir le marqueur de flèche
+                svg.append('defs').append('marker')
+                    .attr('id', 'arrow')
+                    .attr('viewBox', '0 -5 10 10')
+                    .attr('refX', 15)
+                    .attr('refY', 0)
+                    .attr('markerWidth', 6)
+                    .attr('markerHeight', 6)
+                    .attr('orient', 'auto')
+                    .append('path')
+                    .attr('d', 'M0,-5L10,0L0,5')
+                    .attr('fill', '#aaa');
+            })
+            .catch(error => console.error('Error loading the network graph:', error));
     </script>
 </body>
 </html>

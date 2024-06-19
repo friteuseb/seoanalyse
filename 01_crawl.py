@@ -9,8 +9,10 @@ r = redis.Redis(host='localhost', port=6379, db=0)
 
 def crawl_site(url):
     downloaded = trafilatura.fetch_url(url)
-    result = trafilatura.extract(downloaded, include_links=True)
-    return result
+    if downloaded:
+        result = trafilatura.extract(downloaded)
+        return result
+    return None
 
 def save_to_redis(url, content, crawl_id):
     doc_id = f"{crawl_id}:doc:{r.incr(f'{crawl_id}:doc_count')}"

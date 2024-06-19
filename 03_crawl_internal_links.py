@@ -34,6 +34,7 @@ def get_documents_from_redis(crawl_id):
 def extract_internal_links(base_url, content, selector):
     soup = BeautifulSoup(content, 'html.parser')
 
+    # Vérification simplifiée des sélecteurs CSS
     if selector.startswith('.'):
         content_area = soup.find_all(class_=selector[1:])
     elif selector.startswith('#'):

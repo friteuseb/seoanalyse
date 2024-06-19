@@ -35,6 +35,8 @@ def get_documents_from_redis(crawl_id):
             "content": content,
             "internal_links_out": internal_links_out
         })
+    if not documents:
+        logging.warning(f"No documents found for crawl ID {crawl_id}")
     return documents
 
 def compute_embeddings(contents):

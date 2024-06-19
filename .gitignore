@@ -132,3 +132,4 @@ appendonly.aof
 # Output files from running the scripts
 network.json
 index.html
+config.json

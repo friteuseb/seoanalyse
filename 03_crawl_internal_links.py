@@ -2,6 +2,7 @@ import redis
 import trafilatura
 from bs4 import BeautifulSoup
 import sys
+from urllib.parse import urljoin, urlparse
 
 # Connexion à Redis
 r = redis.Redis(host='localhost', port=6379, db=0)
@@ -13,12 +14,13 @@ def list_crawls():
         crawls[crawl_id] = r.get(key).decode('utf-8')
     return crawls
 
-def select_crawl(crawl_id):
+def select_crawl():
     crawls = list_crawls()
-    if crawl_id in crawls:
-        return crawl_id
-    print("Invalid crawl ID.")
-    sys.exit(1)
+    print("Available crawls:")
+    for i, (crawl_id, count) in enumerate(crawls.items(), 1):
+        print(f"{i}. {crawl_id} (Documents: {count})")
+    selected = int(input("Select the crawl number to analyze: ")) - 1
+    return list(crawls.keys())[selected]
 
 def get_documents_from_redis(crawl_id):
     documents = {}
@@ -29,64 +31,56 @@ def get_documents_from_redis(crawl_id):
         documents[doc_id] = url
     return documents
 
-def extract_internal_links(url, selector):
-    downloaded = trafilatura.fetch_url(url)
-    if not downloaded:
-        print(f"Failed to download {url}")
-        return []
-    soup = BeautifulSoup(downloaded, 'html.parser')
-
-    links = set()
-    for link in soup.find_all('a', href=True):
-        href = link['href']
-        if href.startswith('/'):
-            href = url.rstrip('/') + href
-        if url in href:
-            links.add(href)
+def extract_internal_links(base_url, content, selector):
+    soup = BeautifulSoup(content, 'html.parser')
 
     if selector.startswith('.'):
-        content = soup.find_all(class_=selector[1:])
+        content_area = soup.find_all(class_=selector[1:])
     elif selector.startswith('#'):
-        content = soup.find_all(id=selector[1:])
+        content_area = soup.find_all(id=selector[1:])
     else:
         print("Invalid selector")
         return []
 
-    filtered_links = set()
-    for section in content:
+    links = set()
+    for section in content_area:
         for link in section.find_all('a', href=True):
             href = link['href']
-            if href.startswith('/'):
-                href = url.rstrip('/') + href
-            if href in links:
-                filtered_links.add(href)
+            if urlparse(href).netloc == '':
+                full_url = urljoin(base_url, href)
+                if urlparse(full_url).netloc == urlparse(base_url).netloc:
+                    links.add(full_url)
     
-    return list(filtered_links)
+    return list(links)
 
-def save_internal_links_to_redis(doc_id, internal_links):
-    r.hset(doc_id, "internal_links", ','.join(internal_links))
-    print(f"Internal links saved in {doc_id}")
-
-def main():
-    if len(sys.argv) != 3:
-        print("Usage: python3 03_crawl_internal_links.py <Crawl_ID> <Selector>")
-        sys.exit(1)
-
-    crawl_id = sys.argv[1]
-    selector = sys.argv[2]
-
-    crawl_id = select_crawl(crawl_id)
-    documents = get_documents_from_redis(crawl_id)
-
+def save_internal_links_to_redis(crawl_id, documents, selector):
     for doc_id, url in documents.items():
         print(f"Processing {url} for internal links...")
-        internal_links = extract_internal_links(url, selector)
-        if internal_links:
-            print(f"Internal links found for {url}: {internal_links}")
-            save_internal_links_to_redis(doc_id, internal_links)
+        downloaded = trafilatura.fetch_url(url)
+        if not downloaded:
+            print(f"Failed to download {url}")
+            continue
+        internal_links_out = extract_internal_links(url, downloaded, selector)
+        if internal_links_out:
+            print(f"Internal links found for {url}: {internal_links_out}")
+            r.hset(doc_id, "internal_links_out", ','.join(internal_links_out))
         else:
             print(f"No internal links found for {url}")
 
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: python3 03_crawl_internal_links.py <crawl_id> <CSS Selector>")
+        sys.exit(1)
+    
+    crawl_id = sys.argv[1]
+    selector = sys.argv[2]
+    
+    documents = get_documents_from_redis(crawl_id)
+    if not documents:
+        print("No documents found for the given crawl ID.")
+        return
+
+    save_internal_links_to_redis(crawl_id, documents, selector)
     print("Internal links crawling complete.")
 
 if __name__ == "__main__":

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>2D Force-Directed Graph Visualization</title>
+    <style>
+        body { margin: 0; }
+        .node { stroke: #fff; stroke-width: 1.5px; }
+        .link { stroke-opacity: 0.6; }
+        .arrowhead { fill: #999; }
+        .legend { font-family: Arial, sans-serif; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div id="menu">
+        <select id="jsonFileSelect"></select>
+    </div>
+    <svg width="960" height="600"></svg>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script>
+        const svg = d3.select("svg");
+        const width = +svg.attr("width");
+        const height = +svg.attr("height");
+
+        const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+        function loadCrawlOptions() {
+            fetch('crawls/json_files.json')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('jsonFileSelect');
+                    data.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file;
+                        option.textContent = file;
+                        select.appendChild(option);
+                    });
+
+                    select.addEventListener('change', function() {
+                        loadData(`crawls/${this.value}`);
+                    });
+                })
+                .catch(error => console.error('Error fetching JSON files:', error));
+        }
+
+        function loadData(jsonFile) {
+            d3.json(jsonFile).then(data => {
+                svg.selectAll("*").remove();
+
+                const nodes = data.nodes;
+                const links = data.links;
+
+                const linkForce = d3.forceLink(links).id(d => d.id).distance(50);
+
+                const simulation = d3.forceSimulation(nodes)
+                    .force("link", linkForce)
+                    .force("charge", d3.forceManyBody().strength(-100))
+                    .force("center", d3.forceCenter(width / 2, height / 2));
+
+                svg.append("defs").selectAll("marker")
+                    .data(["end"])
+                    .enter().append("marker")
+                    .attr("id", "arrowhead")
+                    .attr("viewBox", "-0 -5 10 10")
+                    .attr("refX", 15)
+                    .attr("refY", 0)
+                    .attr("orient", "auto")
+                    .attr("markerWidth", 6)
+                    .attr("markerHeight", 6)
+                    .attr("xoverflow", "visible")
+                    .append("svg:path")
+                    .attr("d", "M 0,-5 L 10 ,0 L 0,5")
+                    .attr("class", "arrowhead")
+                    .style("stroke", "none");
+
+                const link = svg.append("g")
+                    .attr("class", "links")
+                    .selectAll("line")
+                    .data(links)
+                    .enter().append("line")
+                    .attr("stroke-width", 2)
+                    .attr("marker-end", "url(#arrowhead)")
+                    .style("stroke", d => color(d.color));
+
+                const node = svg.append("g")
+                    .attr("class", "nodes")
+                    .selectAll("circle")
+                    .data(nodes)
+                    .enter().append("circle")
+                    .attr("r", d => Math.sqrt(d.incomingLinks || 1) * 5) // Adjust the radius based on incoming links
+                    .attr("fill", d => color(d.group))
+                    .call(d3.drag()
+                        .on("start", dragstarted)
+                        .on("drag", dragged)
+                        .on("end", dragended));
+
+                node.append("title")
+                    .text(d => d.id);
+
+                simulation
+                    .nodes(nodes)
+                    .on("tick", ticked);
+
+                simulation.force("link")
+                    .links(links);
+
+                function ticked() {
+                    link
+                        .attr("x1", d => d.source.x)
+                        .attr("y1", d => d.source.y)
+                        .attr("x2", d => d.target.x)
+                        .attr("y2", d => d.target.y);
+
+                    node
+                        .attr("cx", d => d.x)
+                        .attr("cy", d => d.y);
+                }
+
+                function dragstarted(event, d) {
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x;
+                    d.fy = d.y;
+                }
+
+                function dragged(event, d) {
+                    d.fx = event.x;
+                    d.fy = event.y;
+                }
+
+                function dragended(event, d) {
+                    if (!event.active) simulation.alphaTarget(0);
+                    d.fx = null;
+                    d.fy = null;
+                }
+
+                // Adding Legend
+                const legend = svg.append("g")
+                    .attr("class", "legend")
+                    .selectAll("g")
+                    .data(color.domain())
+                    .enter().append("g")
+                    .attr("transform", (d, i) => `translate(0,${i * 20})`);
+
+                legend.append("rect")
+                    .attr("x", width - 18)
+                    .attr("width", 18)
+                    .attr("height", 18)
+                    .style("fill", color);
+
+                legend.append("text")
+                    .attr("x", width - 24)
+                    .attr("y", 9)
+                    .attr("dy", ".35em")
+                    .style("text-anchor", "end")
+                    .text(d => `Category ${d}`);
+            });
+        }
+
+        loadCrawlOptions();
+    </script>
+</body>
+</html>

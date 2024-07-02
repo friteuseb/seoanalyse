@@ -3,6 +3,8 @@ import trafilatura
 from bs4 import BeautifulSoup
 import sys
 from urllib.parse import urljoin, urlparse
+import json
+import os
 
 # Connexion à Redis
 r = redis.Redis(host='localhost', port=6379, db=0)
@@ -34,13 +36,10 @@ def get_documents_from_redis(crawl_id):
 def extract_internal_links(base_url, content, selector):
     soup = BeautifulSoup(content, 'html.parser')
 
-    # Vérification simplifiée des sélecteurs CSS
-    if selector.startswith('.'):
-        content_area = soup.find_all(class_=selector[1:])
-    elif selector.startswith('#'):
-        content_area = soup.find_all(id=selector[1:])
-    else:
-        print("Invalid selector")
+    # Utilisation de soup.select pour trouver les éléments correspondants au sélecteur CSS
+    content_area = soup.select(selector)
+    if not content_area:
+        print(f"No content found for selector {selector}")
         return []
 
     links = set()
@@ -68,6 +67,31 @@ def save_internal_links_to_redis(crawl_id, documents, selector):
         else:
             print(f"No internal links found for {url}")
 
+def get_internal_links(crawl_id):
+    internal_links = {}
+    for key in r.scan_iter(f"{crawl_id}:doc:*"):
+        doc_data = r.hgetall(key)
+        if b'internal_links_out' in doc_data:
+            internal_links[key.decode('utf-8')] = doc_data[b'internal_links_out'].decode('utf-8').split(',')
+    return internal_links
+
+def update_json_with_links(json_file, internal_links):
+    if not os.path.exists(json_file):
+        print(f"Error: {json_file} does not exist.")
+        return
+
+    with open(json_file, 'r') as f:
+        data = json.load(f)
+
+    nodes = data['nodes']
+    for node in nodes:
+        url = node['id']
+        if url in internal_links:
+            node['internal_links'] = internal_links[url]
+
+    with open(json_file, 'w') as f:
+        json.dump(data, f, indent=4)
+
 def main():
     if len(sys.argv) < 3:
         print("Usage: python3 03_crawl_internal_links.py <crawl_id> <CSS Selector>")
@@ -83,6 +107,11 @@ def main():
 
     save_internal_links_to_redis(crawl_id, documents, selector)
     print("Internal links crawling complete.")
+    
+    internal_links = get_internal_links(crawl_id)
+    update_json_with_links('simple_graph.json', internal_links)
+    update_json_with_links('clustered_graph.json', internal_links)
+    print("JSON files updated with internal links.")
 
 if __name__ == "__main__":
     main()

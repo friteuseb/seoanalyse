@@ -39,14 +39,6 @@ def run_analysis(crawl_id):
     print("Analysis output:", result.stdout)
     print("Analysis errors:", result.stderr)
 
-def start_http_server():
-    print("Starting server for visualization...")
-    os.chdir('visualizations')
-    subprocess.Popen(['python3', '-m', 'http.server', '8000'])
-
-def start_flask_server():
-    print("Starting Flask server for JSON files...")
-    subprocess.Popen(['python3', 'flask_server.py'])
 
 def main(url, selector):
     if not validate_url(url):
@@ -77,8 +69,6 @@ def main(url, selector):
     run_analysis(crawl_id)
 
     print("Analysis completed.")
-    start_http_server()
-    start_flask_server()
 
 if __name__ == "__main__":
     print("""

@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  web:
+    image: php:8.2-apache
+    container_name: seoanalyse-web
+    volumes:
+      - ./visualizations:/var/www/html
+      - ./php.ini:/usr/local/etc/php/php.ini
+    ports:
+      - "8080:80"
+    environment:
+      - CORS_ALLOW_ORIGIN=*
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    container_name: seoanalyse-redis
+    ports:
+      - "6379:6379"
+
+networks:
+  default:
+    external:
+      name: ddev_default

@@ -2,32 +2,22 @@ import subprocess
 import sys
 import os
 import json
-from termcolor import colored
-
-def print_welcome_message():
-    title = colored('Bienvenue sur l\'application de Visualisation Sémantique !', 'cyan', attrs=['bold', 'underline'])
-    description = """
-    Cette application vous permet de :
-    1. Lancer un crawl d'un site web pour en extraire le contenu.
-    2. Analyser les liens internes du site.
-    3. Réaliser une analyse sémantique pour déterminer les thématiques dominantes.
-    4. Visualiser les résultats sous forme de graphes interactifs.
-    """
-    steps = """
-    Étapes pour utiliser l'application :
-    1. Fournissez l'URL du site web à crawler.
-    2. Fournissez le sélecteur CSS pour extraire les liens internes.
-    3. Patientez pendant que l'application effectue les analyses.
-    4. Visualisez les résultats via les serveurs web et Flask.
-    """
-    print(title)
-    print(colored(description, 'green'))
-    print(colored(steps, 'yellow'))
+from urllib.parse import urlparse
 
 def load_config():
-    with open('config.json') as f:
+    config_path = 'config.json'
+    if not os.path.exists(config_path):
+        print(f"Error: {config_path} not found.")
+        print("Please copy 'config.json.example' to 'config.json' and fill in your API token.")
+        sys.exit(1)
+
+    with open(config_path) as f:
         config = json.load(f)
     return config
+
+def validate_url(url):
+    result = urlparse(url)
+    return all([result.scheme, result.netloc])
 
 def run_crawl(url):
     result = subprocess.run(['python3', '01_crawl.py', url], capture_output=True, text=True)
@@ -59,7 +49,11 @@ def start_flask_server():
     subprocess.Popen(['python3', 'flask_server.py'])
 
 def main(url, selector):
-    print_welcome_message()
+    if not validate_url(url):
+        print(f"Invalid URL: {url}")
+        print("Please provide a valid URL (e.g., https://www.example.com)")
+        return
+
     config = load_config()
 
     if "HUGGINGFACEHUB_API_TOKEN" not in config:
@@ -87,10 +81,26 @@ def main(url, selector):
     start_flask_server()
 
 if __name__ == "__main__":
-    print_welcome_message()
+    print("""
+    Bienvenue sur l'application de Visualisation Sémantique !
+
+    Cette application vous permet de :
+    1. Lancer un crawl d'un site web pour en extraire le contenu.
+    2. Analyser les liens internes du site.
+    3. Réaliser une analyse sémantique pour déterminer les thématiques dominantes.
+    4. Visualiser les résultats sous forme de graphes interactifs.
+    
+
+    Étapes pour utiliser l'application :
+    1. Fournissez l'URL du site web à crawler.
+    2. Fournissez le sélecteur CSS pour extraire les liens internes.
+    3. Patientez pendant que l'application effectue les analyses.
+    4. Visualisez les résultats via les serveurs web et Flask.
+    """)
+    
     if len(sys.argv) < 3:
         print("Usage: python3 main.py <URL> <CSS Selector>")
-        print("\nExemple : python3 main.py https://www.example-domain.com .content")
+        print("\nExample: python3 main.py https://www.example-domain.com .content")
         sys.exit(1)
     
     url = sys.argv[1]

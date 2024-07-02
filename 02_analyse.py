@@ -79,21 +79,29 @@ def save_graph_to_redis(crawl_id, documents, clusters, labels):
     nodes = []
     links = []
     url_to_id = {doc["url"]: doc["doc_id"] for doc in documents}
+    link_counts = {}
 
     for i, doc in enumerate(documents):
+        internal_links_count = len(doc["internal_links_out"])
         nodes.append({
             "id": doc["url"],
             "label": doc["url"].split('/')[-1],
             "group": int(clusters[i]),
-            "title": labels[clusters[i]]
+            "title": labels[clusters[i]],
+            "internal_links_count": internal_links_count
         })
         for link in doc["internal_links_out"]:
             if link in url_to_id:
-                links.append({
-                    "source": doc["url"],
-                    "target": link,
-                    "color": int(clusters[i])
-                })
+                link_key = (doc["url"], link)
+                link_counts[link_key] = link_counts.get(link_key, 0) + 1
+
+    for (source, target), weight in link_counts.items():
+        links.append({
+            "source": source,
+            "target": target,
+            "color": int(clusters[i]),
+            "weight": weight
+        })
 
     simple_graph = {"nodes": nodes, "links": links}
     r.set(f"{crawl_id}_simple_graph", json.dumps(simple_graph, default=convert_to_serializable))

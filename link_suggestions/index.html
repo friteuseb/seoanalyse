@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Suggestions de Liens Internes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+        }
+        .link-suggestion {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Suggestions de Liens Internes</h1>
+        <div id="suggestions"></div>
+    </div>
+
+    <script>
+        // Fonction pour charger les suggestions de liens depuis le fichier JSON
+        async function loadSuggestions() {
+            try {
+                const response = await fetch('link_suggestions_api.php');
+                const data = await response.json();
+                displaySuggestions(data);
+            } catch (error) {
+                console.error('Error fetching suggestions:', error);
+                document.getElementById('suggestions').innerHTML = '<p>Erreur lors de la récupération des suggestions.</p>';
+            }
+        }
+
+        // Fonction pour afficher les suggestions de liens
+        function displaySuggestions(suggestions) {
+            const suggestionsContainer = document.getElementById('suggestions');
+            suggestionsContainer.innerHTML = '';
+
+            suggestions.forEach(suggestion => {
+                const suggestionDiv = document.createElement('div');
+                suggestionDiv.classList.add('link-suggestion');
+
+                const title = document.createElement('h2');
+                title.textContent = `Suggestion pour la page : ${suggestion.page}`;
+                suggestionDiv.appendChild(title);
+
+                const ul = document.createElement('ul');
+                suggestion.links.forEach(link => {
+                    const li = document.createElement('li');
+                    li.textContent = `Lien suggéré : ${link}`;
+                    ul.appendChild(li);
+                });
+
+                suggestionDiv.appendChild(ul);
+                suggestionsContainer.appendChild(suggestionDiv);
+            });
+        }
+
+        // Charger les suggestions à l'ouverture de la page
+        window.onload = loadSuggestions;
+    </script>
+</body>
+</html>

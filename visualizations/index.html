@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualisation de Graphe</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div id="controls">
+        <select id="graphSelect"></select>
+        <button id="loadGraph">Charger le graphe</button>
+    </div>
+    <div id="graph"></div>
+    <div id="tableContainer">
+        <table id="nodesTable">
+            <thead>
+                <tr>
+                    <th>Nom du nœud</th>
+                    <th>Liens entrants</th>
+                    <th>Liens sortants</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be populated by script.js -->
+            </tbody>
+        </table>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

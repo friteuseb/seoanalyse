@@ -110,20 +110,6 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
-# PDF and other binary files
-*.pdf
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.svg
-*.mp4
-*.mov
-
-# Data files
-*.csv
-*.tsv
-*.dat
 
 # Redis dump files
 dump.rdb
@@ -131,9 +117,7 @@ appendonly.aof
 
 # Output files from running the scripts
 network.json
-index.html
 config.json
-
 
 # Ignore les certificats et clés privés
 .ddev/traefik/certs/*.crt

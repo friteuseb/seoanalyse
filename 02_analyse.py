@@ -11,10 +11,10 @@ from nltk.corpus import stopwords
 import sys
 import logging
 
-nltk.download('stopwords')
+nltk.download('stopwords', quiet=True)
 
 # Configuration de la journalisation
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Connexion à Redis
 r = redis.Redis(host='localhost', port=6379, db=0)
@@ -31,7 +31,7 @@ def get_documents_from_redis(crawl_id):
         doc_id = key.decode('utf-8')
         url = doc_data[b'url'].decode('utf-8')
         content = doc_data[b'content'].decode('utf-8')
-        internal_links_out = doc_data.get(b'internal_links_out', b'').decode('utf-8').split(',')
+        internal_links_out = json.loads(doc_data.get(b'internal_links_out', b'[]').decode('utf-8'))
         documents.append({
             "doc_id": doc_id,
             "url": url,
@@ -78,38 +78,43 @@ def save_results_to_redis(crawl_id, documents, clusters, labels):
 def save_graph_to_redis(crawl_id, documents, clusters, labels):
     nodes = []
     links = []
-    url_to_id = {doc["url"]: doc["doc_id"] for doc in documents}
-    link_counts = {}
+    url_to_index = {}
 
     for i, doc in enumerate(documents):
-        internal_links_count = len(doc["internal_links_out"])
+        url_to_index[doc["url"]] = i
         nodes.append({
             "id": doc["url"],
             "label": doc["url"].split('/')[-1],
             "group": int(clusters[i]),
             "title": labels[clusters[i]],
-            "internal_links_count": internal_links_count
+            "internal_links_count": len(doc["internal_links_out"])
         })
+
+    for i, doc in enumerate(documents):
         for link in doc["internal_links_out"]:
-            if link in url_to_id:
-                link_key = (doc["url"], link)
-                link_counts[link_key] = link_counts.get(link_key, 0) + 1
+            if link in url_to_index:
+                links.append({
+                    "source": doc["url"],  # Utiliser l'URL au lieu de l'index
+                    "target": link,        # Utiliser l'URL cible directement
+                    "value": 1
+                })
 
-    for (source, target), weight in link_counts.items():
-        links.append({
-            "source": source,
-            "target": target,
-            "color": int(clusters[i]),
-            "weight": weight
-        })
+    graph_data = {"nodes": nodes, "links": links}
+    
+    # Sauvegarde dans Redis
+    r.set(f"{crawl_id}_simple_graph", json.dumps(graph_data, default=convert_to_serializable))
+    logging.info(f"Simple view saved to Redis with key {crawl_id}_simple_graph")
 
-    simple_graph = {"nodes": nodes, "links": links}
-    r.set(f"{crawl_id}_simple_graph", json.dumps(simple_graph, default=convert_to_serializable))
-    print(f"Simple view saved to Redis with key {crawl_id}_simple_graph")
+    r.set(f"{crawl_id}_clustered_graph", json.dumps(graph_data, default=convert_to_serializable))
+    logging.info(f"Clustered view saved to Redis with key {crawl_id}_clustered_graph")
 
-    clustered_graph = {"nodes": nodes, "links": links}
-    r.set(f"{crawl_id}_clustered_graph", json.dumps(clustered_graph, default=convert_to_serializable))
-    print(f"Clustered view saved to Redis with key {crawl_id}_clustered_graph")
+    # Suppression de la sauvegarde dans les fichiers JSON
+    # Ces lignes sont supprimées :
+    # with open(f"{crawl_id}_simple_graph.json", "w") as f:
+    #     json.dump(simple_graph, f, default=convert_to_serializable)
+    # with open(f"{crawl_id}_clustered_graph.json", "w") as f:
+    #     json.dump(clustered_graph, f, default=convert_to_serializable)
+    # logging.info(f"Graph data saved to JSON files")
 
 def convert_to_serializable(obj):
     if isinstance(obj, np.int32):
@@ -118,35 +123,41 @@ def convert_to_serializable(obj):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python3 02_analyse.py <crawl_id>")
+        logging.error("Usage: python3 02_analyse.py <crawl_id>")
         return
     
     crawl_id = sys.argv[1]
     documents = get_documents_from_redis(crawl_id)
     
     if not documents:
-        print("No documents found for the given crawl ID.")
+        logging.error("No documents found for the given crawl ID.")
         return
+    
+    logging.info(f"Number of documents: {len(documents)}")
     
     contents = [doc["content"] for doc in documents]
     
-    print("Computing embeddings...")
+    logging.info("Computing embeddings...")
     embeddings = compute_embeddings(contents)
+    logging.info(f"Shape of embeddings: {embeddings.shape}")
     
-    print("Clustering embeddings...")
-    clusters, kmeans = cluster_embeddings(embeddings, n_clusters=5)
+    n_clusters = min(5, len(documents) - 1)
+    logging.info(f"Clustering embeddings with {n_clusters} clusters...")
+    clusters, kmeans = cluster_embeddings(embeddings, n_clusters=n_clusters)
     
-    print("Reducing dimensions for visualization...")
+    logging.info("Reducing dimensions for visualization...")
     reduced_embeddings = reduce_dimensions(embeddings)
     
-    print("Determining cluster labels...")
-    labels = determine_cluster_labels(contents, clusters, n_clusters=5)
+    logging.info("Determining cluster labels...")
+    labels = determine_cluster_labels(contents, clusters, n_clusters=n_clusters)
     
-    print("Saving results to Redis...")
+    logging.info("Saving results to Redis...")
     save_results_to_redis(crawl_id, documents, clusters, labels)
     
-    print("Saving network graph to Redis...")
+    logging.info("Saving network graph to Redis and JSON files...")
     save_graph_to_redis(crawl_id, documents, clusters, labels)
+
+    logging.info("Analysis completed successfully.")
 
 if __name__ == "__main__":
     main()

@@ -20,25 +20,29 @@ def validate_url(url):
     return all([result.scheme, result.netloc])
 
 def run_crawl(url):
-    result = subprocess.run(['python3', '01_crawl.py', url], capture_output=True, text=True)
-    print("Crawl output:", result.stdout)
-    print("Crawl errors:", result.stderr)
-    crawl_id_line = [line for line in result.stdout.split('\n') if line.startswith('Crawl terminé. ID du crawl:')]
-    if crawl_id_line:
-        crawl_id = crawl_id_line[0].split(': ')[1]
-        return crawl_id
+    try:
+        result = subprocess.run(['python3', '01_crawl.py', url], capture_output=True, text=True, check=True)
+        print("Crawl output:", result.stdout)
+        crawl_id_line = [line for line in result.stdout.split('\n') if line.startswith('Crawl terminé. ID du crawl:')]
+        if crawl_id_line:
+            return crawl_id_line[0].split(': ')[1]
+    except subprocess.CalledProcessError as e:
+        print("Crawl errors:", e.stderr)
     return None
 
 def run_internal_links_crawl(crawl_id, selector):
-    result = subprocess.run(['python3', '03_crawl_internal_links.py', crawl_id, selector], capture_output=True, text=True)
-    print("Internal links crawl output:", result.stdout)
-    print("Internal links crawl errors:", result.stderr)
+    try:
+        result = subprocess.run(['python3', '03_crawl_internal_links.py', crawl_id, selector], capture_output=True, text=True, check=True)
+        print("Internal links crawl output:", result.stdout)
+    except subprocess.CalledProcessError as e:
+        print("Internal links crawl errors:", e.stderr)
 
 def run_analysis(crawl_id):
-    result = subprocess.run(['python3', '02_analyse.py', crawl_id], capture_output=True, text=True)
-    print("Analysis output:", result.stdout)
-    print("Analysis errors:", result.stderr)
-
+    try:
+        result = subprocess.run(['python3', '02_analyse.py', crawl_id], capture_output=True, text=True, check=True)
+        print("Analysis output:", result.stdout)
+    except subprocess.CalledProcessError as e:
+        print("Analysis errors:", e.stderr)
 
 def main(url, selector):
     if not validate_url(url):

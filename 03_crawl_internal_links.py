@@ -31,8 +31,8 @@ def get_documents_from_redis(crawl_id):
         doc_id = key.decode('utf-8')
         url = doc_data[b'url'].decode('utf-8')
         label = doc_data.get(b'label', b'').decode('utf-8')
-        cluster = int(doc_data[b'cluster'].decode('utf-8'))
-        documents[doc_id] = {'url': url, 'label': label, 'cluster': cluster}
+        cluster = doc_data.get(b'cluster', b'0').decode('utf-8')
+        documents[doc_id] = {'url': url, 'label': label, 'cluster': int(cluster)}
     return documents
 
 def extract_internal_links(base_url, content, selector):
@@ -66,7 +66,7 @@ def save_internal_links_to_redis(crawl_id, documents, selector):
         internal_links_out = extract_internal_links(url, downloaded, selector)
         if internal_links_out:
             print(f"Internal links found for {url}: {internal_links_out}")
-            r.hset(doc_id, "internal_links_out", ','.join(internal_links_out))
+            r.hset(doc_id, "internal_links_out", json.dumps(internal_links_out))
         else:
             print(f"No internal links found for {url}")
 
@@ -75,7 +75,7 @@ def get_internal_links(crawl_id):
     for key in r.scan_iter(f"{crawl_id}:doc:*"):
         doc_data = r.hgetall(key)
         if b'internal_links_out' in doc_data:
-            internal_links[key.decode('utf-8')] = doc_data[b'internal_links_out'].decode('utf-8').split(',')
+            internal_links[key.decode('utf-8')] = json.loads(doc_data[b'internal_links_out'].decode('utf-8'))
     return internal_links
 
 def assign_cluster_colors(documents):
@@ -91,6 +91,9 @@ def assign_cluster_colors(documents):
         doc_info['color'] = cluster_colors[cluster]
     return documents
 
+def is_valid_url(url):
+    return url.startswith('http://') or url.startswith('https://')
+
 def update_json_with_links(json_file, internal_links, documents):
     if not os.path.exists(json_file):
         print(f"Error: {json_file} does not exist.")
@@ -103,7 +106,7 @@ def update_json_with_links(json_file, internal_links, documents):
     for node in nodes:
         url = node['id']
         if url in internal_links:
-            node['internal_links'] = internal_links[url]
+            node['internal_links'] = [link for link in internal_links[url] if is_valid_url(link)]
         if url in documents:
             node['label'] = documents[url]['label']
             node['group'] = documents[url]['cluster']
@@ -130,8 +133,8 @@ def main():
     print("Internal links crawling complete.")
     
     internal_links = get_internal_links(crawl_id)
-    update_json_with_links('simple_graph.json', internal_links, documents)
-    update_json_with_links('clustered_graph.json', internal_links, documents)
+    update_json_with_links(f'{crawl_id}_simple_graph.json', internal_links, documents)
+    update_json_with_links(f'{crawl_id}_clustered_graph.json', internal_links, documents)
     print("JSON files updated with internal links and labels.")
 
 if __name__ == "__main__":

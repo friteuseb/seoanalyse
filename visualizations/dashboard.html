@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Dashboard</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="styles_dashboard.css">
+</head>
+<body>
+    <div class="container" id="dashboard">
+        <h1 class="mt-4">SEO Dashboard</h1>
+        <div class="row mb-4" id="kpi-section">
+            <!-- KPIs will be dynamically added here -->
+        </div>
+        <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="crawls-tab" data-toggle="tab" href="#crawls" role="tab" aria-controls="crawls" aria-selected="true">Crawls</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="overview-tab" data-toggle="tab" href="#overview" role="tab" aria-controls="overview" aria-selected="false">Overview</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="details-tab" data-toggle="tab" href="#details" role="tab" aria-controls="details" aria-selected="false">Details</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="clusters-tab" data-toggle="tab" href="#clusters" role="tab" aria-controls="clusters" aria-selected="false">Clusters</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="top-nodes-tab" data-toggle="tab" href="#top-nodes" role="tab" aria-controls="top-nodes" aria-selected="false">Top Nodes</a>
+            </li>
+        </ul>
+        <div class="tab-content" id="dashboardTabsContent">
+            <div class="tab-pane fade show active" id="crawls" role="tabpanel" aria-labelledby="crawls-tab">
+                <div id="crawl-list"></div>
+            </div>
+            <div class="tab-pane fade" id="overview" role="tabpanel" aria-labelledby="overview-tab">
+                <div id="overview-content">Overview content will be here.</div>
+            </div>
+            <div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
+                <div id="crawl-details"></div>
+            </div>
+            <div class="tab-pane fade" id="clusters" role="tabpanel" aria-labelledby="clusters-tab">
+                <div id="clusters-content">Clusters content will be here.</div>
+            </div>
+            <div class="tab-pane fade" id="top-nodes" role="tabpanel" aria-labelledby="top-nodes-tab">
+                <div id="top-nodes-content">Top Nodes content will be here.</div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="crawl_dashboard.js"></script>
+</body>
+</html>

@@ -133,3 +133,42 @@ appendonly.aof
 network.json
 index.html
 config.json
+
+
+# Ignore les certificats et clés privés
+.ddev/traefik/certs/*.crt
+.ddev/traefik/certs/*.key
+
+# Ignore les fichiers spécifiques à l'IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore les fichiers générés par le système d'exploitation
+.DS_Store
+Thumbs.db
+
+# Ignore les fichiers de logs
+logs/
+*.log
+
+# Ignore les environnements virtuels
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Ignore les dépendances
+node_modules/
+vendor/
+
+# Ignore les fichiers de configuration sensible
+config.json
+.env
+
+# Ignore les fichiers temporaires et de build
+dist/
+build/
+tmp/
+*.swp

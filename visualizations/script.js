@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let graphData = null;
     let isClustered = false;
+    let currentSortColumn = null;
+    let currentSortOrder = 'asc';
 
     const colorList = [
         "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
@@ -27,27 +29,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadGraphButton.addEventListener('click', loadGraph);
 
+    // MODIFIED: loadGraph function
     function loadGraph() {
         const selectedGraph = graphSelect.value;
         if (!selectedGraph) return;
-
+    
         fetch(`get_graph_data.php?graph=${selectedGraph}`)
             .then(response => response.json())
             .then(data => {
-                // Convert numeric indices to node IDs in links
-                data.links = data.links.map(link => ({
-                    source: data.nodes[link.source].id,
-                    target: data.nodes[link.target].id,
-                    value: link.value
-                }));
-
+                // Vérifier si les données sont dans le bon format
+                if (!Array.isArray(data.nodes) || !Array.isArray(data.links)) {
+                    console.error('Invalid data format:', data);
+                    return;
+                }
+    
+                // Créer un map des nœuds pour une recherche plus rapide
+                const nodeMap = new Map(data.nodes.map(node => [node.id, node]));
+    
+                // Convert links to the correct format
+                data.links = data.links.map(link => {
+                    let source = typeof link.source === 'object' ? link.source : nodeMap.get(link.source);
+                    let target = typeof link.target === 'object' ? link.target : nodeMap.get(link.target);
+                
+                    if (!source || !target) {
+                        console.error('Invalid link:', link);
+                        return null;
+                    }
+                
+                    return {
+                        source: source,
+                        target: target,
+                        value: link.value
+                    };
+                }).filter(link => link !== null);
+    
                 graphData = data;
                 isClustered = selectedGraph.includes('clustered');
                 createGraph(data, isClustered);
                 populateTable(data.nodes, data.links);
+            })
+            .catch(error => {
+                console.error('Error loading graph:', error);
             });
     }
 
+    // MODIFIED: createGraph function
     function createGraph(data, isClustered) {
         d3.select("#graph").selectAll("*").remove();
 
@@ -173,24 +199,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function populateTable(nodes, links) {
+        console.log("Nodes:", nodes);
+        console.log("Links:", links);
+    
         const tableBody = document.querySelector('#nodesTable tbody');
         tableBody.innerHTML = '';
     
         nodes.forEach(node => {
+            console.log("Processing node:", node);
+    
             const row = document.createElement('tr');
-            row.setAttribute('data-node-id', node.id);
+            row.setAttribute('data-node-id', node.id || 'undefined');
     
             const colorCell = document.createElement('td');
-            colorCell.style.backgroundColor = getColor(node.group);
+            colorCell.style.backgroundColor = getColor(node.group || 0);
             colorCell.style.width = '5px';
             row.appendChild(colorCell);
     
             const nodeNameCell = document.createElement('td');
-            nodeNameCell.textContent = node.label;
+            nodeNameCell.textContent = node.label || node.id || 'Unnamed';
             row.appendChild(nodeNameCell);
     
-            const incomingLinksCount = links.filter(link => link.target.id === node.id).length;
-            const outgoingLinksCount = links.filter(link => link.source.id === node.id).length;
+            const incomingLinksCount = links.filter(link => 
+                (typeof link.target === 'object' ? link.target.id : link.target) === node.id
+            ).length;
+            const outgoingLinksCount = links.filter(link => 
+                (typeof link.source === 'object' ? link.source.id : link.source) === node.id
+            ).length;
+    
+            console.log(`Node ${node.id}: Incoming links: ${incomingLinksCount}, Outgoing links: ${outgoingLinksCount}`);
     
             const incomingLinksCell = document.createElement('td');
             incomingLinksCell.textContent = incomingLinksCount;
@@ -212,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tableBody.appendChild(row);
         });
     }
-
+    // Modifiez la fonction removeNode comme suit
     function removeNode(d) {
         const index = graphData.nodes.findIndex(node => node.id === d.id);
         if (index > -1) {
@@ -220,32 +257,56 @@ document.addEventListener('DOMContentLoaded', () => {
             graphData.links = graphData.links.filter(l => l.source.id !== d.id && l.target.id !== d.id);
             createGraph(graphData, isClustered);
             populateTable(graphData.nodes, graphData.links);
+            
+            // Réappliquer le tri actuel après la suppression
+            if (currentSortColumn !== null) {
+                sortTable(currentSortColumn, currentSortOrder);
+            }
         }
+    }
+
+
+
+    // Ajoutez cette nouvelle fonction pour gérer le tri
+    function sortTable(columnIndex, order) {
+        const tableBody = document.querySelector('#nodesTable tbody');
+        const rows = Array.from(tableBody.querySelectorAll('tr'));
+
+        rows.sort((a, b) => {
+            let aValue = a.children[columnIndex].textContent;
+            let bValue = b.children[columnIndex].textContent;
+
+            if (columnIndex === 0) {  // Tri par couleur
+                aValue = a.children[columnIndex].style.backgroundColor;
+                bValue = b.children[columnIndex].style.backgroundColor;
+            } else if (!isNaN(aValue) && !isNaN(bValue)) {  // Tri numérique
+                aValue = Number(aValue);
+                bValue = Number(bValue);
+            }
+
+            if (aValue < bValue) return order === 'asc' ? -1 : 1;
+            if (aValue > bValue) return order === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        rows.forEach(row => tableBody.appendChild(row));
     }
 
     function addTableSorting() {
         const headers = document.querySelectorAll('#nodesTable th');
-        headers.forEach(header => {
+        headers.forEach((header, index) => {
             header.addEventListener('click', () => {
                 const table = header.closest('table');
-                const rows = Array.from(table.querySelectorAll('tbody tr'));
-                const index = Array.from(header.parentElement.children).indexOf(header);
-                const ascending = header.classList.contains('asc');
-
-                rows.sort((a, b) => {
-                    const cellA = a.children[index].textContent;
-                    const cellB = b.children[index].textContent;
-
-                    if (!isNaN(cellA) && !isNaN(cellB)) {
-                        return ascending ? cellA - cellB : cellB - cellA;
-                    } else {
-                        return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
-                    }
+                currentSortOrder = header.classList.contains('asc') ? 'desc' : 'asc';
+                currentSortColumn = index;
+    
+                headers.forEach(h => {
+                    h.classList.remove('asc', 'desc');
                 });
-
-                rows.forEach(row => table.querySelector('tbody').appendChild(row));
-                header.classList.toggle('asc', !ascending);
-                header.classList.toggle('desc', ascending);
+    
+                header.classList.add(currentSortOrder);
+    
+                sortTable(currentSortColumn, currentSortOrder);
             });
         });
     }

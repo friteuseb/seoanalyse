@@ -10,6 +10,25 @@ Ce projet est une application d'analyse sémantique et de visualisation de liens
 4. **Clusterisation** : Regroupement des pages en clusters basés sur le contenu sémantique.
 5. **Assignation de couleurs de cluster** : Harmonisation des couleurs pour une meilleure visualisation.
 
+
+## Fonctionnement de l'application
+
+L'application de Visualisation Sémantique fonctionne en plusieurs étapes interconnectées, comme illustré dans le schéma ci-dessous :
+
+![Schéma fonctionnel de l'application](schema_fonctionnel.png)
+
+Ce schéma montre le flux de travail de l'application :
+
+1. Le script principal `main.py` orchestre l'ensemble du processus.
+2. `01_crawl.py` crawle le site web et stocke les données dans Redis.
+3. `03_crawl_internal_links.py` extrait les liens internes des pages crawlées.
+4. `02_analyse.py` effectue l'analyse sémantique des données.
+5. Les résultats sont utilisés pour générer des graphes de visualisation.
+6. Ces graphes sont présentés via une interface web interactive.
+
+Redis joue un rôle central dans ce processus, servant de stockage intermédiaire pour les données à chaque étape. Cette architecture permet une analyse efficace et une visualisation dynamique des résultats.
+
+
 ## Prérequis
 
 - Python 3.7 ou supérieur

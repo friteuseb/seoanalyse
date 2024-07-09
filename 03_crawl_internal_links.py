@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup
 import sys
 from urllib.parse import urljoin, urlparse
 import json
-import os
 
 # Connexion à Redis
 r = redis.Redis(host='localhost', port=6379, db=0)
@@ -70,14 +69,6 @@ def save_internal_links_to_redis(crawl_id, documents, selector):
         else:
             print(f"No internal links found for {url}")
 
-def get_internal_links(crawl_id):
-    internal_links = {}
-    for key in r.scan_iter(f"{crawl_id}:doc:*"):
-        doc_data = r.hgetall(key)
-        if b'internal_links_out' in doc_data:
-            internal_links[key.decode('utf-8')] = json.loads(doc_data[b'internal_links_out'].decode('utf-8'))
-    return internal_links
-
 def assign_cluster_colors(documents):
     cluster_colors = {}
     color_list = [
@@ -90,30 +81,6 @@ def assign_cluster_colors(documents):
             cluster_colors[cluster] = color_list[len(cluster_colors) % len(color_list)]
         doc_info['color'] = cluster_colors[cluster]
     return documents
-
-def is_valid_url(url):
-    return url.startswith('http://') or url.startswith('https://')
-
-def update_json_with_links(json_file, internal_links, documents):
-    if not os.path.exists(json_file):
-        print(f"Error: {json_file} does not exist.")
-        return
-
-    with open(json_file, 'r') as f:
-        data = json.load(f)
-
-    nodes = data['nodes']
-    for node in nodes:
-        url = node['id']
-        if url in internal_links:
-            node['internal_links'] = [link for link in internal_links[url] if is_valid_url(link)]
-        if url in documents:
-            node['label'] = documents[url]['label']
-            node['group'] = documents[url]['cluster']
-            node['color'] = documents[url]['color']
-
-    with open(json_file, 'w') as f:
-        json.dump(data, f, indent=4)
 
 def main():
     if len(sys.argv) < 3:
@@ -131,11 +98,6 @@ def main():
     documents = assign_cluster_colors(documents)
     save_internal_links_to_redis(crawl_id, documents, selector)
     print("Internal links crawling complete.")
-    
-    internal_links = get_internal_links(crawl_id)
-    update_json_with_links(f'{crawl_id}_simple_graph.json', internal_links, documents)
-    update_json_with_links(f'{crawl_id}_clustered_graph.json', internal_links, documents)
-    print("JSON files updated with internal links and labels.")
 
 if __name__ == "__main__":
     main()

@@ -2,13 +2,17 @@ import subprocess
 import sys
 import os
 import json
+import logging
 from urllib.parse import urlparse
+
+# Configuration du logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def load_config():
     config_path = 'config.json'
     if not os.path.exists(config_path):
-        print(f"Error: {config_path} not found.")
-        print("Please copy 'config.json.example' to 'config.json' and fill in your API token.")
+        logging.error(f"Error: {config_path} not found.")
+        logging.info("Please copy 'config.json.example' to 'config.json' and fill in your API token.")
         sys.exit(1)
 
     with open(config_path) as f:
@@ -19,60 +23,73 @@ def validate_url(url):
     result = urlparse(url)
     return all([result.scheme, result.netloc])
 
+def run_command(command):
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, universal_newlines=True)
+    output = []
+    for line in iter(process.stdout.readline, ''):
+        print(line, end='')  # Affiche la ligne en temps réel
+        output.append(line)  # Stocke la ligne pour un traitement ultérieur si nécessaire
+    process.stdout.close()
+    return_code = process.wait()
+    if return_code:
+        raise subprocess.CalledProcessError(return_code, command)
+    return ''.join(output)
+
 def run_crawl(url):
     try:
-        result = subprocess.run(['python3', '01_crawl.py', url], capture_output=True, text=True, check=True)
-        print("Crawl output:", result.stdout)
-        crawl_id_line = [line for line in result.stdout.split('\n') if line.startswith('Crawl terminé. ID du crawl:')]
+        output = run_command(['python3', '01_crawl.py', url])
+        crawl_id_line = [line for line in output.split('\n') if line.startswith('Crawl terminé. ID du crawl:')]
         if crawl_id_line:
             return crawl_id_line[0].split(': ')[1]
     except subprocess.CalledProcessError as e:
-        print("Crawl errors:", e.stderr)
+        logging.error(f"Crawl failed with error code {e.returncode}")
     return None
 
 def run_internal_links_crawl(crawl_id, selector):
     try:
-        result = subprocess.run(['python3', '03_crawl_internal_links.py', crawl_id, selector], capture_output=True, text=True, check=True)
-        print("Internal links crawl output:", result.stdout)
+        run_command(['python3', '03_crawl_internal_links.py', crawl_id, selector])
     except subprocess.CalledProcessError as e:
-        print("Internal links crawl errors:", e.stderr)
+        logging.error(f"Internal links crawl failed with error code {e.returncode}")
 
 def run_analysis(crawl_id):
     try:
-        result = subprocess.run(['python3', '02_analyse.py', crawl_id], capture_output=True, text=True, check=True)
-        print("Analysis output:", result.stdout)
+        run_command(['python3', '02_analyse.py', crawl_id])
     except subprocess.CalledProcessError as e:
-        print("Analysis errors:", e.stderr)
+        logging.error(f"Analysis failed with error code {e.returncode}")
 
 def main(url, selector):
     if not validate_url(url):
-        print(f"Invalid URL: {url}")
-        print("Please provide a valid URL (e.g., https://www.example.com)")
+        logging.error(f"Invalid URL: {url}")
+        logging.info("Please provide a valid URL (e.g., https://www.example.com)")
         return
 
     config = load_config()
 
     if "HUGGINGFACEHUB_API_TOKEN" not in config:
-        print("Error: HUGGINGFACEHUB_API_TOKEN not found in config.json")
+        logging.error("Error: HUGGINGFACEHUB_API_TOKEN not found in config.json")
         return
 
     os.environ["HUGGINGFACEHUB_API_TOKEN"] = config["HUGGINGFACEHUB_API_TOKEN"]
 
-    print("Starting crawl process...")
+    logging.info("Starting crawl process...")
     crawl_id = run_crawl(url)
     if not crawl_id:
-        print("Crawl failed.")
+        logging.error("Crawl failed.")
         return
 
-    print(f"Crawl completed with ID: {crawl_id}")
-    print("Starting internal links crawl process...")
+    logging.info(f"Crawl completed with ID: {crawl_id}")
+    logging.info("Starting internal links crawl process...")
     run_internal_links_crawl(crawl_id, selector)
 
-    print("Internal links crawl completed.")
-    print("Starting analysis process...")
+    logging.info("Internal links crawl completed.")
+    logging.info("Starting analysis process...")
     run_analysis(crawl_id)
 
-    print("Analysis completed.")
+    logging.info("Analysis completed.")
+
+def cleanup():
+    # Ajoutez ici le code pour nettoyer les fichiers temporaires ou libérer les ressources
+    logging.info("Cleaning up resources...")
 
 if __name__ == "__main__":
     print("""
@@ -99,4 +116,10 @@ if __name__ == "__main__":
     
     url = sys.argv[1]
     selector = sys.argv[2]
-    main(url, selector)
+    
+    try:
+        main(url, selector)
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
+    finally:
+        cleanup()

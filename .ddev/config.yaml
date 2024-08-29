@@ -1,6 +1,6 @@
-name: trafilatura
-type: python
-docroot: ""
+name: seoanalyse
+type: php
+docroot: visualizations
 php_version: "8.2"
 webserver_type: nginx-fpm
 xdebug_enabled: false
@@ -12,12 +12,16 @@ database:
 hooks:
     post-start:
         - exec: |
-            apt-get update && apt-get install -y php-redis
-            docker-php-ext-enable redis
+            sudo apt-get update && sudo apt-get install -y php-redis
+            sudo phpenmod redis
 use_dns_when_possible: true
 composer_version: "2"
 web_environment: []
-corepack_enable: false
+nodejs_version: "16"  # ou la version que vous préférez pour JavaScript
+services:
+  redis:
+    type: redis:6
+
 
 # Key features of DDEV's config.yaml:
 

@@ -2,7 +2,7 @@
 header('Content-Type: application/json');
 
 $redis = new Redis();
-$redis->connect('localhost', 6379);
+$redis->connect('redis', 6379);
 
 $keys = $redis->keys('*_graph');
 

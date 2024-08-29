@@ -1,0 +1,2 @@
+redis:
+  type: redis:6

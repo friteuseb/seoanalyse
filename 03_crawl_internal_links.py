@@ -6,7 +6,7 @@ from urllib.parse import urljoin, urlparse
 import json
 
 # Connexion à Redis
-r = redis.Redis(host='localhost', port=6379, db=0)
+r = redis.Redis(host='localhost', port=32768, db=0)
 
 def list_crawls():
     crawls = {}

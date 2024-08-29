@@ -4,25 +4,25 @@ http:
   routers:
     
     
-    seoanalyse-web-80-http:
+    trafilatura-web-80-http:
       
-      rule: HostRegexp(`seoanalyse.ddev.site`)
+      rule: HostRegexp(`trafilatura.ddev.site`)
       
       middlewares:
         - autodetect
-      service: "seoanalyse-web-80-http"
+      service: "trafilatura-web-80-http"
       tls: false
       entrypoints:
         - http-8383
     
     
-    seoanalyse-web-8025-http:
+    trafilatura-web-8025-http:
       
-      rule: HostRegexp(`seoanalyse.ddev.site`)
+      rule: HostRegexp(`trafilatura.ddev.site`)
       
       middlewares:
         - autodetect
-      service: "seoanalyse-web-8025-http"
+      service: "trafilatura-web-8025-http"
       tls: false
       entrypoints:
         - http-8025
@@ -32,13 +32,13 @@ http:
     
     
     
-    seoanalyse-web-80-https:
+    trafilatura-web-80-https:
       
-      rule: HostRegexp(`seoanalyse.ddev.site`)
+      rule: HostRegexp(`trafilatura.ddev.site`)
       
       middlewares:
         - autodetect
-      service: "seoanalyse-web-80-https"
+      service: "trafilatura-web-80-https"
       
       tls: true
       
@@ -46,13 +46,13 @@ http:
         - http-8843
     
     
-    seoanalyse-web-8025-https:
+    trafilatura-web-8025-https:
       
-      rule: HostRegexp(`seoanalyse.ddev.site`)
+      rule: HostRegexp(`trafilatura.ddev.site`)
       
       middlewares:
         - autodetect
-      service: "seoanalyse-web-8025-https"
+      service: "trafilatura-web-8025-https"
       
       tls: true
       
@@ -69,32 +69,32 @@ http:
 
   services:
     
-    seoanalyse-web-80-http:
+    trafilatura-web-80-http:
       loadbalancer:
         servers:
-          - url: http://ddev-seoanalyse-web:80
+          - url: http://ddev-trafilatura-web:80
     
-    seoanalyse-web-8025-http:
+    trafilatura-web-8025-http:
       loadbalancer:
         servers:
-          - url: http://ddev-seoanalyse-web:8025
+          - url: http://ddev-trafilatura-web:8025
     
-    seoanalyse-web-80-https:
-    
-      loadbalancer:
-        servers:
-          - url: http://ddev-seoanalyse-web:80
-    
-    seoanalyse-web-8025-https:
+    trafilatura-web-80-https:
     
       loadbalancer:
         servers:
-          - url: http://ddev-seoanalyse-web:8025
+          - url: http://ddev-trafilatura-web:80
+    
+    trafilatura-web-8025-https:
+    
+      loadbalancer:
+        servers:
+          - url: http://ddev-trafilatura-web:8025
     
 
 
 tls:
   certificates:
-    - certFile: /mnt/ddev-global-cache/traefik/certs/seoanalyse.crt
-      keyFile: /mnt/ddev-global-cache/traefik/certs/seoanalyse.key
+    - certFile: /mnt/ddev-global-cache/traefik/certs/trafilatura.crt
+      keyFile: /mnt/ddev-global-cache/traefik/certs/trafilatura.key
 

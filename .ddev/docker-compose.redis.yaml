@@ -1,0 +1,12 @@
+version: '3.6'
+services:
+  redis:
+    image: redis:6
+    restart: always
+    ports:
+      - "6379"
+    labels:
+      com.ddev.site-name: ${DDEV_SITENAME}
+      com.ddev.approot: $DDEV_APPROOT
+    environment:
+      - VIRTUAL_HOST=$DDEV_HOSTNAME

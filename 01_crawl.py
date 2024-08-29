@@ -5,7 +5,7 @@ import uuid
 import sys
 
 # Connexion à Redis
-r = redis.Redis(host='localhost', port=6379, db=0)
+r = redis.Redis(host='localhost', port=32768, db=0)
 
 def crawl_site(url):
     downloaded = trafilatura.fetch_url(url)

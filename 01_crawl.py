@@ -18,7 +18,6 @@ def get_redis_port():
 r = redis.Redis(host='localhost', port=get_redis_port(), db=0)
 
 
-
 def crawl_site(url):
     downloaded = trafilatura.fetch_url(url)
     if downloaded:

@@ -21,6 +21,8 @@ nodejs_version: "16"  # ou la version que vous préférez pour JavaScript
 services:
   redis:
     type: redis:6
+    ports:
+      - "6379:6379"  # Remplacez 6379 par le port que vous voulez utiliser
 
 
 # Key features of DDEV's config.yaml:

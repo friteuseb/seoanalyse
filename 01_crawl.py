@@ -3,9 +3,20 @@ import trafilatura
 from trafilatura.sitemaps import sitemap_search
 import uuid
 import sys
+import subprocess
 
-# Connexion à Redis
-r = redis.Redis(host='localhost', port=32768, db=0)
+
+def get_redis_port():
+    try:
+        port = subprocess.check_output("ddev describe -j | jq -r '.raw.services[\"redis-1\"].host_ports | split(\",\")[0]'", shell=True)
+        return int(port.strip())
+    except Exception as e:
+        print(f"Erreur lors de la récupération du port Redis : {e}")
+        sys.exit(1)
+
+# Connexion à Redis en utilisant le port dynamique
+r = redis.Redis(host='localhost', port=get_redis_port(), db=0)
+
 
 def crawl_site(url):
     downloaded = trafilatura.fetch_url(url)

@@ -10,14 +10,23 @@ import nltk
 from nltk.corpus import stopwords
 import sys
 import logging
-
+import subprocess
 nltk.download('stopwords', quiet=True)
 
 # Configuration de la journalisation
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Connexion à Redis
-r = redis.Redis(host='localhost', port=32768, db=0)
+def get_redis_port():
+    try:
+        port = subprocess.check_output("ddev describe -j | jq -r '.raw.services[\"redis-1\"].host_ports | split(\",\")[0]'", shell=True)
+        return int(port.strip())
+    except Exception as e:
+        print(f"Erreur lors de la récupération du port Redis : {e}")
+        sys.exit(1)
+
+# Connexion à Redis en utilisant le port dynamique
+r = redis.Redis(host='localhost', port=get_redis_port(), db=0)
+
 
 model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 

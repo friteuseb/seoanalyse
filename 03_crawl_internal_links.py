@@ -4,9 +4,18 @@ from bs4 import BeautifulSoup
 import sys
 from urllib.parse import urljoin, urlparse
 import json
+import subprocess
 
-# Connexion à Redis
-r = redis.Redis(host='localhost', port=32768, db=0)
+def get_redis_port():
+    try:
+        port = subprocess.check_output("ddev describe -j | jq -r '.raw.services[\"redis-1\"].host_ports | split(\",\")[0]'", shell=True)
+        return int(port.strip())
+    except Exception as e:
+        print(f"Erreur lors de la récupération du port Redis : {e}")
+        sys.exit(1)
+
+# Connexion à Redis en utilisant le port dynamique
+r = redis.Redis(host='localhost', port=get_redis_port(), db=0)
 
 def list_crawls():
     crawls = {}
@@ -36,13 +45,11 @@ def get_documents_from_redis(crawl_id):
 
 def extract_internal_links(base_url, content, selector):
     soup = BeautifulSoup(content, 'html.parser')
-
-    # Utilisation de soup.select pour trouver les éléments correspondants au sélecteur CSS
     content_area = soup.select(selector)
     if not content_area:
         print(f"No content found for selector {selector}")
         return []
-
+    
     links = set()
     for section in content_area:
         for link in section.find_all('a', href=True):
@@ -53,6 +60,7 @@ def extract_internal_links(base_url, content, selector):
                     links.add(full_url)
     
     return list(links)
+
 
 def save_internal_links_to_redis(crawl_id, documents, selector):
     for doc_id, doc_info in documents.items():

@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tableBody.appendChild(row);
         });
     }
-    // Modifiez la fonction removeNode comme suit
+   
     function removeNode(d) {
         const index = graphData.nodes.findIndex(node => node.id === d.id);
         if (index > -1) {
@@ -307,30 +307,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // Ajoutez cette nouvelle fonction pour gérer le tri
+    // fonction pour gérer le tri
     function sortTable(columnIndex, order) {
         const tableBody = document.querySelector('#nodesTable tbody');
         const rows = Array.from(tableBody.querySelectorAll('tr'));
-
+    
         rows.sort((a, b) => {
-            let aValue = a.children[columnIndex].textContent;
-            let bValue = b.children[columnIndex].textContent;
-
-            if (columnIndex === 0) {  // Tri par couleur
-                aValue = a.children[columnIndex].style.backgroundColor;
-                bValue = b.children[columnIndex].style.backgroundColor;
-            } else if (!isNaN(aValue) && !isNaN(bValue)) {  // Tri numérique
-                aValue = Number(aValue);
-                bValue = Number(bValue);
+            let aValue = a.children[columnIndex].textContent.trim();
+            let bValue = b.children[columnIndex].textContent.trim();
+    
+            // Vérifier si les valeurs sont des nombres et les convertir
+            if (!isNaN(aValue) && !isNaN(bValue)) {
+                aValue = parseFloat(aValue);
+                bValue = parseFloat(bValue);
             }
-
+    
             if (aValue < bValue) return order === 'asc' ? -1 : 1;
             if (aValue > bValue) return order === 'asc' ? 1 : -1;
             return 0;
         });
-
+    
         rows.forEach(row => tableBody.appendChild(row));
     }
+    
 
     function addTableSorting() {
         const headers = document.querySelectorAll('#nodesTable th');

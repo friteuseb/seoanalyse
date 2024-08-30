@@ -1,8 +1,10 @@
 <?php
+// testRedis.php
+
 $redis = new Redis();
 try {
-    $redis->connect('redis', 6379);
-    echo "Connection to server successful\n";
+    $redis->connect('127.0.0.1', 6379);
+    echo "Connection to server sucessfully";
     
     // Set the data in redis string
     $redis->set("key", "value");
@@ -13,3 +15,4 @@ try {
     echo "Failed to connect to Redis: " . $e->getMessage();
 }
 ?>
+

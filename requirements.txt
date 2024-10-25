@@ -10,4 +10,6 @@ sentence-transformers==2.2.2
 tld==0.13
 trafilatura==1.10.0
 termcolor==2.2.0
-d3==6.7.0
+pandas==2.1.0
+lxml[html_clean]==4.9.3
+

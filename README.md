@@ -45,6 +45,11 @@ Redis joue un rôle central dans ce processus, servant de stockage intermédiair
 
 ## Installation
 
+Créeez un environnement virtuel : 
+   ```sh
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
 1. Clonez le dépôt GitHub :
    ```sh
    git clone https://github.com/friteuseb/seoanalyse.git

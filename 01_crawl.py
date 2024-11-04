@@ -4,21 +4,55 @@ from trafilatura.sitemaps import sitemap_search
 import uuid
 import sys
 import subprocess
+import logging
+import requests
+from xml.etree import ElementTree as ET
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def get_redis_port():
     try:
         port = subprocess.check_output("ddev describe -j | jq -r '.raw.services[\"redis-1\"].host_ports | split(\",\")[0]'", shell=True)
         return int(port.strip())
     except Exception as e:
-        print(f"Erreur lors de la récupération du port Redis : {e}")
+        logging.error(f"Erreur lors de la récupération du port Redis : {e}")
         sys.exit(1)
 
-# Connexion à Redis en utilisant le port dynamique
+# Connexion à Redis
 r = redis.Redis(host='localhost', port=get_redis_port(), db=0)
 
+def get_urls_from_sitemap(base_url):
+    """Récupère les URLs depuis le sitemap."""
+    # D'abord essayer trafilatura
+    sitemap_urls = sitemap_search(base_url)
+    if sitemap_urls:
+        return sitemap_urls
+
+    # Si trafilatura échoue, essayer la méthode directe
+    sitemap_url = f"{base_url.rstrip('/')}/sitemap.xml"
+    logging.info(f"Lecture du sitemap : {sitemap_url}")
+    
+    try:
+        response = requests.get(sitemap_url)
+        response.raise_for_status()
+        
+        root = ET.fromstring(response.content)
+        ns = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+        
+        urls = []
+        for url in root.findall('.//ns:url/ns:loc', ns):
+            urls.append(url.text)
+            logging.info(f"URL trouvée : {url.text}")
+        
+        logging.info(f"📍 {len(urls)} URLs trouvées dans le sitemap")
+        return urls
+        
+    except Exception as e:
+        logging.warning(f"Erreur lors de la lecture du sitemap : {e}")
+        return [base_url]
 
 def crawl_site(url):
+    """Crawl une URL et retourne son contenu."""
     downloaded = trafilatura.fetch_url(url)
     if downloaded:
         result = trafilatura.extract(downloaded)
@@ -26,6 +60,7 @@ def crawl_site(url):
     return None
 
 def save_to_redis(url, content, crawl_id):
+    """Sauvegarde le contenu dans Redis."""
     doc_id = f"{crawl_id}:doc:{r.incr(f'{crawl_id}:doc_count')}"
     r.hset(doc_id, mapping={
         "url": url,
@@ -34,6 +69,7 @@ def save_to_redis(url, content, crawl_id):
     print(f"Enregistré dans Redis: {doc_id}")
 
 def process_site(url, crawl_id):
+    """Traite une URL individuelle."""
     content = crawl_site(url)
     if content:
         save_to_redis(url, content, crawl_id)
@@ -41,11 +77,12 @@ def process_site(url, crawl_id):
     return None, None
 
 def crawl_and_store(url, crawl_id):
-    sitemap_urls = sitemap_search(url)
-    urls_to_crawl = [url] + sitemap_urls
+    """Fonction principale de crawl."""
+    urls_to_crawl = get_urls_from_sitemap(url)
     print(f"URLs extraites du sitemap: {urls_to_crawl}")
 
     for url in urls_to_crawl:
+        logging.info(f"Traitement de : {url}")
         process_site(url, crawl_id)
 
 if __name__ == "__main__":

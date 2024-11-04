@@ -5,44 +5,68 @@ import json
 import logging
 import argparse
 from urllib.parse import urlparse
+from termcolor import colored
+
+
 
 def print_banner():
-    print("""
-    🌐 Visualisation Sémantique Web
-    ==============================
+    print(colored("""
+    ╔══════════════════════════════════════════════════════════════╗
+    ║            Visualisation Sémantique Web v1.0                 ║
+    ║            Analyse du Maillage Interne                       ║
+    ╚══════════════════════════════════════════════════════════════╝
+    """, "cyan", attrs=["bold"]))
 
-    Cette application permet d'analyser la structure sémantique d'un site web :
-    1. Crawl du contenu du site
-    2. Analyse des liens internes
+    print(colored("📊 FONCTIONNALITÉS", "yellow", attrs=["bold"]))
+    print(colored("""
+    1. Crawl du contenu des zones spécifiées
+    2. Analyse des liens internes éditoriaux
     3. Analyse sémantique des thématiques
     4. Visualisation interactive des résultats
+    """, "white"))
 
-    """)
+    print(colored("🎯 ZONES D'ANALYSE", "yellow", attrs=["bold"]))
+    print(colored("""
+    Utilisez les sélecteurs CSS pour cibler précisément les zones :
+    """, "white"))
+    print(colored("    • ", "green") + "Classes : " + colored(".content, .article, .post", "cyan"))
+    print(colored("    • ", "green") + "IDs : " + colored("#main-content, #article", "cyan"))
+    print(colored("    • ", "green") + "Exclusions : " + colored("#content:not(.menu):not(.footer)", "cyan"))
+    print()
 
 def setup_argument_parser():
     parser = argparse.ArgumentParser(
-        description="Outil d'analyse sémantique et de visualisation de sites web",
+        description=colored("Outil d'analyse sémantique et visualisation du maillage interne éditorial", "cyan", attrs=["bold"]),
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Exemples d'utilisation:
-----------------------
-1. Analyser avec un sélecteur de classe:
-   python3 main.py https://example.com/ ".content"
+        epilog=colored("""
+╔══════════════════════════════════════════════════════════════╗
+║                   EXEMPLES D'UTILISATION                     ║
+╚══════════════════════════════════════════════════════════════╝
+""", "yellow", attrs=["bold"]) + """
+1. Analyser une zone par classe CSS:
+   """ + colored('python3 main.py https://example.com/ ".content"', "cyan") + """
 
-2. Analyser avec un ID:
-   python3 main.py https://example.com/ "#main-content"
+2. Analyser une zone par ID:
+   """ + colored('python3 main.py https://example.com/ "#main-content"', "cyan") + """
 
 3. Analyser plusieurs zones:
-   python3 main.py https://example.com/ "#main-content, .article-content"
+   """ + colored('python3 main.py https://example.com/ "#main-content, .article-content"', "cyan") + """
 
-Note: Les sélecteurs CSS doivent être entre guillemets pour éviter les problèmes d'interprétation.
-      """
-    )
+4. Analyser en excluant des zones:
+   """ + colored('python3 main.py https://example.com/ "#main-content:not(.navigation)"', "cyan") + """
+   """ + colored('python3 main.py https://example.com/ ".content:not(#menu):not(.sidebar)"', "cyan") + """
+
+""" + colored("📝 NOTES:", "yellow", attrs=["bold"]) + """
+""" + colored("•", "green") + """ Les sélecteurs CSS doivent être entre guillemets
+""" + colored("•", "green") + """ Utilisez :not() pour exclure les zones non pertinentes
+""" + colored("•", "green") + """ Seuls les liens des zones sélectionnées seront analysés
+""" + colored("•", "green") + """ L'analyse exclut automatiquement les liens externes
+""")
     
     parser.add_argument("url", 
-                       help="URL du site à analyser (ex: https://example.com/)")
+                       help=colored("URL du site à analyser (ex: https://example.com/)", "cyan"))
     parser.add_argument("selector", 
-                       help="Sélecteur CSS pour cibler les zones à analyser (ex: '#content' ou '.main-content')")
+                       help=colored("Sélecteur CSS pour cibler les zones à analyser", "cyan"))
     return parser
 
 # Configuration du logging

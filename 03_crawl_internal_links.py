@@ -2,9 +2,19 @@ import redis
 import trafilatura
 from bs4 import BeautifulSoup
 import sys
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlunparse
 import json
 import subprocess
+from datetime import datetime
+import logging
+import time
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 def get_redis_port():
     try:
@@ -33,49 +43,186 @@ def select_crawl():
     return list(crawls.keys())[selected]
 
 def get_documents_from_redis(crawl_id):
-    documents = {}
-    for key in r.scan_iter(f"{crawl_id}:doc:*"):
-        doc_data = r.hgetall(key)
-        doc_id = key.decode('utf-8')
-        url = doc_data[b'url'].decode('utf-8')
-        label = doc_data.get(b'label', b'').decode('utf-8')
-        cluster = doc_data.get(b'cluster', b'0').decode('utf-8')
-        documents[doc_id] = {'url': url, 'label': label, 'cluster': int(cluster)}
-    return documents
+    try:
+        documents = {}
+        pattern = f"{crawl_id}:doc:*"
+        keys = r.scan_iter(pattern)
+        if not keys:
+            logging.warning(f"Aucun document trouvé avec le pattern {pattern}")
+            return documents
+
+        for key in keys:
+            try:
+                doc_data = r.hgetall(key)
+                doc_id = key.decode('utf-8')
+                documents[doc_id] = {
+                    'url': doc_data[b'url'].decode('utf-8'),
+                    'label': doc_data.get(b'label', b'').decode('utf-8'),
+                    'cluster': int(doc_data.get(b'cluster', b'0').decode('utf-8'))
+                }
+            except Exception as e:
+                logging.error(f"Erreur lors du traitement du document {key}: {e}")
+                continue
+        return documents
+    except Exception as e:
+        logging.error(f"Erreur lors de la récupération des documents: {e}")
+        return {}
 
 def extract_internal_links(base_url, content, selector):
+    """
+    Extrait les liens internes d'une page web en utilisant des sélecteurs CSS étendus.
+    
+    Args:
+        base_url (str): L'URL de base du site
+        content (str): Le contenu HTML de la page
+        selector (str): Le sélecteur CSS (support des classes et IDs)
+    
+    Returns:
+        list: Liste des URLs internes trouvées
+    """
     soup = BeautifulSoup(content, 'html.parser')
-    content_area = soup.select(selector)
-    if not content_area:
-        print(f"No content found for selector {selector}")
-        return []
     
+    # Si plusieurs sélecteurs sont fournis (séparés par des virgules)
+    selectors = [s.strip() for s in selector.split(',')]
+    content_areas = []
+    
+    for sel in selectors:
+        # Essayer d'abord le sélecteur tel quel
+        found_areas = soup.select(sel)
+        if found_areas:
+            content_areas.extend(found_areas)
+        else:
+            # Si aucun résultat, essayer de parser le sélecteur nous-mêmes
+            try:
+                if sel.startswith('#'):
+                    # Recherche par ID
+                    element = soup.find(id=sel[1:])
+                    if element:
+                        content_areas.append(element)
+                elif sel.startswith('.'):
+                    # Recherche par classe
+                    elements = soup.find_all(class_=sel[1:])
+                    content_areas.extend(elements)
+                else:
+                    # Recherche par tag
+                    elements = soup.find_all(sel)
+                    content_areas.extend(elements)
+            except Exception as e:
+                logging.warning(f"Erreur lors du parsing du sélecteur {sel}: {e}")
+    
+    if not content_areas:
+        # Si aucune zone trouvée, utiliser tout le body comme fallback
+        logging.warning(f"Aucune zone trouvée avec le sélecteur {selector}, utilisation du body complet")
+        content_areas = [soup.body] if soup.body else []
+
     links = set()
-    for section in content_area:
-        for link in section.find_all('a', href=True):
-            href = link['href']
-            if urlparse(href).netloc == '':
-                full_url = urljoin(base_url, href)
-                if urlparse(full_url).netloc == urlparse(base_url).netloc:
-                    links.add(full_url)
+    base_domain = urlparse(base_url).netloc
     
+    for area in content_areas:
+        for link in area.find_all('a', href=True):
+            href = link['href']
+            
+            # Ignorer les ancres seules et les liens javascript
+            if href.startswith('#') or href.startswith('javascript:'):
+                continue
+                
+            try:
+                # Normalisation de l'URL
+                full_url = urljoin(base_url, href)
+                parsed_url = urlparse(full_url)
+                
+                # Vérification plus précise des liens internes
+                if parsed_url.netloc == base_domain:
+                    # Normaliser l'URL (enlever les fragments, etc.)
+                    normalized_url = urlunparse((
+                        parsed_url.scheme,
+                        parsed_url.netloc,
+                        parsed_url.path.rstrip('/'),
+                        parsed_url.params,
+                        parsed_url.query,
+                        None  # Pas de fragment
+                    ))
+                    links.add(normalized_url)
+            except Exception as e:
+                logging.warning(f"Erreur lors du traitement de l'URL {href}: {e}")
+
     return list(links)
 
+def crawl_with_retry(url, max_retries=3, delay=1):
+    """
+    Télécharge une page avec gestion des erreurs et retry.
+    """
+    for attempt in range(max_retries):
+        try:
+            # Attente entre les requêtes pour éviter de surcharger le serveur
+            time.sleep(delay)
+            
+            # Utilisation simple de fetch_url sans paramètres additionnels
+            response = trafilatura.fetch_url(url)
+            if response:
+                return response
+            
+            # Augmenter le délai après chaque échec
+            delay *= 2
+            
+        except Exception as e:
+            logging.warning(f"Tentative {attempt + 1}/{max_retries} échouée pour {url}: {e}")
+            time.sleep(delay)
+    
+    logging.error(f"Échec du téléchargement de {url} après {max_retries} tentatives")
+    return None
 
 def save_internal_links_to_redis(crawl_id, documents, selector):
-    for doc_id, doc_info in documents.items():
+    total = len(documents)
+    successful = 0
+    failed = 0
+    
+    logging.info(f"Démarrage du crawl des liens internes pour {total} documents")
+    
+    for i, (doc_id, doc_info) in enumerate(documents.items(), 1):
         url = doc_info['url']
-        print(f"Processing {url} for internal links...")
-        downloaded = trafilatura.fetch_url(url)
+        logging.info(f"Processing {i}/{total}: {url}")
+        
+        downloaded = crawl_with_retry(url)
+        
         if not downloaded:
-            print(f"Failed to download {url}")
+            failed += 1
+            logging.error(f"❌ Échec du téléchargement pour {url}")
             continue
+            
         internal_links_out = extract_internal_links(url, downloaded, selector)
+        successful += 1
+        
         if internal_links_out:
-            print(f"Internal links found for {url}: {internal_links_out}")
-            r.hset(doc_id, "internal_links_out", json.dumps(internal_links_out))
+            doc_data = {
+                "internal_links_out": json.dumps(internal_links_out),
+                "crawl_date": datetime.now().isoformat(),
+                "content_length": len(downloaded),
+                "links_count": len(internal_links_out)
+            }
+            logging.info(f"✅ {len(internal_links_out)} liens trouvés pour {url}")
+            r.hset(doc_id, mapping=doc_data)
         else:
-            print(f"No internal links found for {url}")
+            logging.info(f"ℹ️ Aucun lien trouvé pour {url}")
+            r.hset(doc_id, mapping={
+                "internal_links_out": "[]",
+                "crawl_date": datetime.now().isoformat(),
+                "content_length": len(downloaded),
+                "links_count": 0
+            })
+            
+        if i % 5 == 0 or i == total:
+            percent = (i/total)*100
+            logging.info(f"📊 Progression: {i}/{total} ({percent:.1f}%) - ✅ Réussis: {successful}, ❌ Échecs: {failed}")
+    
+    # Résumé final
+    logging.info(f"""
+    🏁 Crawl terminé:
+    - Documents traités: {total}
+    - Succès: {successful}
+    - Échecs: {failed}
+    - Taux de réussite: {(successful/total)*100:.1f}%
+    """)
 
 def assign_cluster_colors(documents):
     cluster_colors = {}

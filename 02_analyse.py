@@ -84,46 +84,141 @@ def save_results_to_redis(crawl_id, documents, clusters, labels):
         r.hset(doc_id, "cluster", int(clusters[i]))
         r.hset(doc_id, "label", labels[clusters[i]])
 
+def create_display_label(url):
+    """Crée un label d'affichage lisible à partir d'une URL."""
+    # Supprimer le protocole
+    clean_url = url.replace('https://', '').replace('http://', '')
+    
+    # Supprimer le trailing slash
+    clean_url = clean_url.rstrip('/')
+    
+    # Diviser l'URL en parties
+    parts = clean_url.split('/')
+    
+    if len(parts) <= 1:
+        # C'est juste un domaine
+        return clean_url
+    
+    # Retourner la dernière partie non-vide de l'URL
+    for part in reversed(parts):
+        if part:
+            return part
+    
+    return url  # Fallback au cas où
+
 def save_graph_to_redis(crawl_id, documents, clusters, labels):
     nodes = []
     links = []
     url_to_index = {}
+    urls_set = set()  # Pour suivre toutes les URLs connues
 
+    # Debug des documents
+    logging.info(f"Début du traitement des documents...")
+    
+    # Premièrement, collectons toutes les URLs valides
+    for doc in documents:
+        url = doc["url"].rstrip('/')  # Normaliser les URLs en retirant le slash final
+        urls_set.add(url)
+        if url.endswith('/'):
+            urls_set.add(url[:-1])  # Ajouter aussi la version sans slash
+        else:
+            urls_set.add(url + '/')  # Ajouter aussi la version avec slash
+
+    logging.info(f"URLs valides collectées: {len(urls_set)}")
+
+    # Création des nœuds et collecte des liens
     for i, doc in enumerate(documents):
-        url_to_index[doc["url"]] = i
+        url = doc["url"].rstrip('/')
+        url_to_index[url] = i
+        doc_id = doc["doc_id"]
+        
+        # Récupération et parsing des liens internes
+        try:
+            doc_data = r.hgetall(doc_id)
+            internal_links_raw = doc_data.get(b'internal_links_out', b'[]').decode('utf-8')
+            internal_links = json.loads(internal_links_raw)
+            
+            logging.info(f"\nAnalyse de {url}:")
+            logging.info(f"Nombre de liens trouvés: {len(internal_links)}")
+            
+            if internal_links:
+                for link in internal_links:
+                    normalized_link = link.strip().rstrip('/')
+                    # Vérifier si le lien existe dans notre ensemble d'URLs valides
+                    if normalized_link in urls_set:
+                        links.append({
+                            "source": url,
+                            "target": normalized_link,
+                            "value": 1
+                        })
+                    else:
+                        logging.info(f"Lien ignoré: {link} -> n'existe pas dans les URLs valides")
+                        
+        except json.JSONDecodeError as e:
+            logging.error(f"Erreur de décodage JSON pour {url}: {e}")
+            continue
+        except Exception as e:
+            logging.error(f"Erreur lors du traitement des liens pour {url}: {e}")
+            continue
+
+        display_label = create_display_label(url)
         nodes.append({
-            "id": doc["url"],
-            "label": doc["url"].split('/')[-1],
+            "id": url,
+            "label": display_label,
             "group": int(clusters[i]),
             "title": labels[clusters[i]],
-            "internal_links_count": len(doc["internal_links_out"])
+            "internal_links_count": len(internal_links) if 'internal_links' in locals() else 0
         })
 
-    for i, doc in enumerate(documents):
-        for link in doc["internal_links_out"]:
-            if link in url_to_index:
-                links.append({
-                    "source": doc["url"],  # Utiliser l'URL au lieu de l'index
-                    "target": link,        # Utiliser l'URL cible directement
-                    "value": 1
-                })
+    # Filtrer et compter les liens
+    valid_links = []
+    link_count = {}  # Pour compter les liens par URL
 
-    graph_data = {"nodes": nodes, "links": links}
+    for link in links:
+        source = link["source"].rstrip('/')
+        target = link["target"].rstrip('/')
+        
+        if source in urls_set and target in urls_set:
+            valid_links.append(link)
+            # Compter les liens
+            if source not in link_count:
+                link_count[source] = {"out": 0, "in": 0}
+            if target not in link_count:
+                link_count[target] = {"out": 0, "in": 0}
+            link_count[source]["out"] += 1
+            link_count[target]["in"] += 1
+
+    # Afficher les statistiques détaillées
+    logging.info("\n📊 Statistiques très détaillées du graphe:")
+    logging.info(f"Nombre de nœuds: {len(nodes)}")
+    logging.info(f"Nombre total de liens trouvés: {len(links)}")
+    logging.info(f"Nombre de liens valides après filtrage: {len(valid_links)}")
     
+    # Afficher les URLs avec le plus de liens entrants/sortants
+    sorted_by_in = sorted(link_count.items(), key=lambda x: x[1]["in"], reverse=True)[:5]
+    sorted_by_out = sorted(link_count.items(), key=lambda x: x[1]["out"], reverse=True)[:5]
+    
+    logging.info("\nTop 5 des pages avec le plus de liens entrants:")
+    for url, counts in sorted_by_in:
+        logging.info(f"{url}: {counts['in']} liens entrants")
+    
+    logging.info("\nTop 5 des pages avec le plus de liens sortants:")
+    for url, counts in sorted_by_out:
+        logging.info(f"{url}: {counts['out']} liens sortants")
+
+    graph_data = {
+        "nodes": nodes,
+        "links": valid_links
+    }
+
     # Sauvegarde dans Redis
-    r.set(f"{crawl_id}_simple_graph", json.dumps(graph_data, default=convert_to_serializable))
-    logging.info(f"Simple view saved to Redis with key {crawl_id}_simple_graph")
-
-    r.set(f"{crawl_id}_clustered_graph", json.dumps(graph_data, default=convert_to_serializable))
-    logging.info(f"Clustered view saved to Redis with key {crawl_id}_clustered_graph")
-
-    # Suppression de la sauvegarde dans les fichiers JSON
-    # Ces lignes sont supprimées :
-    # with open(f"{crawl_id}_simple_graph.json", "w") as f:
-    #     json.dump(simple_graph, f, default=convert_to_serializable)
-    # with open(f"{crawl_id}_clustered_graph.json", "w") as f:
-    #     json.dump(clustered_graph, f, default=convert_to_serializable)
-    # logging.info(f"Graph data saved to JSON files")
+    try:
+        r.set(f"{crawl_id}_simple_graph", json.dumps(graph_data, default=convert_to_serializable))
+        r.set(f"{crawl_id}_clustered_graph", json.dumps(graph_data, default=convert_to_serializable))
+        logging.info("\nGraphe sauvegardé avec succès dans Redis")
+    except Exception as e:
+        logging.error(f"Erreur lors de la sauvegarde dans Redis: {e}")
+        raise
 
 def convert_to_serializable(obj):
     if isinstance(obj, np.int32):

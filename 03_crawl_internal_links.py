@@ -70,57 +70,36 @@ def get_documents_from_redis(crawl_id):
 
 def extract_internal_links(base_url, content, selector):
     """
-    Extrait les liens internes d'une page web en utilisant des sélecteurs CSS étendus.
+    Extrait uniquement les liens internes présents dans la zone de contenu spécifiée.
     
     Args:
         base_url (str): L'URL de base du site
         content (str): Le contenu HTML de la page
-        selector (str): Le sélecteur CSS (support des classes et IDs)
+        selector (str): Le sélecteur CSS pour cibler la zone de contenu principale
     
     Returns:
-        list: Liste des URLs internes trouvées
+        list: Liste des URLs internes trouvées dans la zone de contenu
     """
     soup = BeautifulSoup(content, 'html.parser')
     
-    # Si plusieurs sélecteurs sont fournis (séparés par des virgules)
-    selectors = [s.strip() for s in selector.split(',')]
-    content_areas = []
+    # Trouver la zone de contenu spécifiée
+    content_area = soup.select(selector)
+    if not content_area:
+        logging.warning(f"❌ Aucune zone trouvée avec le sélecteur {selector} pour {base_url}")
+        return []
     
-    for sel in selectors:
-        # Essayer d'abord le sélecteur tel quel
-        found_areas = soup.select(sel)
-        if found_areas:
-            content_areas.extend(found_areas)
-        else:
-            # Si aucun résultat, essayer de parser le sélecteur nous-mêmes
-            try:
-                if sel.startswith('#'):
-                    # Recherche par ID
-                    element = soup.find(id=sel[1:])
-                    if element:
-                        content_areas.append(element)
-                elif sel.startswith('.'):
-                    # Recherche par classe
-                    elements = soup.find_all(class_=sel[1:])
-                    content_areas.extend(elements)
-                else:
-                    # Recherche par tag
-                    elements = soup.find_all(sel)
-                    content_areas.extend(elements)
-            except Exception as e:
-                logging.warning(f"Erreur lors du parsing du sélecteur {sel}: {e}")
+    logging.info(f"✅ Zone de contenu trouvée pour {base_url}")
     
-    if not content_areas:
-        # Si aucune zone trouvée, utiliser tout le body comme fallback
-        logging.warning(f"Aucune zone trouvée avec le sélecteur {selector}, utilisation du body complet")
-        content_areas = [soup.body] if soup.body else []
-
     links = set()
     base_domain = urlparse(base_url).netloc
     
-    for area in content_areas:
+    for area in content_area:
+        # Debug pour voir le contenu de la zone
+        logging.debug(f"Analyse de la zone : {area.get('class', 'no-class')} - {area.get('id', 'no-id')}")
+        
         for link in area.find_all('a', href=True):
             href = link['href']
+            link_text = link.get_text().strip()
             
             # Ignorer les ancres seules et les liens javascript
             if href.startswith('#') or href.startswith('javascript:'):
@@ -131,9 +110,8 @@ def extract_internal_links(base_url, content, selector):
                 full_url = urljoin(base_url, href)
                 parsed_url = urlparse(full_url)
                 
-                # Vérification plus précise des liens internes
+                # Vérification des liens internes
                 if parsed_url.netloc == base_domain:
-                    # Normaliser l'URL (enlever les fragments, etc.)
                     normalized_url = urlunparse((
                         parsed_url.scheme,
                         parsed_url.netloc,
@@ -143,9 +121,12 @@ def extract_internal_links(base_url, content, selector):
                         None  # Pas de fragment
                     ))
                     links.add(normalized_url)
+                    logging.debug(f"Lien trouvé : {link_text} -> {normalized_url}")
+                
             except Exception as e:
                 logging.warning(f"Erreur lors du traitement de l'URL {href}: {e}")
 
+    logging.info(f"🔍 Liens trouvés dans la zone de contenu : {len(links)}")
     return list(links)
 
 def crawl_with_retry(url, max_retries=3, delay=1):

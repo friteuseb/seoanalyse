@@ -3,10 +3,51 @@ import sys
 import os
 import json
 import logging
+import argparse
 from urllib.parse import urlparse
+
+def print_banner():
+    print("""
+    🌐 Visualisation Sémantique Web
+    ==============================
+
+    Cette application permet d'analyser la structure sémantique d'un site web :
+    1. Crawl du contenu du site
+    2. Analyse des liens internes
+    3. Analyse sémantique des thématiques
+    4. Visualisation interactive des résultats
+
+    """)
+
+def setup_argument_parser():
+    parser = argparse.ArgumentParser(
+        description="Outil d'analyse sémantique et de visualisation de sites web",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemples d'utilisation:
+----------------------
+1. Analyser avec un sélecteur de classe:
+   python3 main.py https://example.com/ ".content"
+
+2. Analyser avec un ID:
+   python3 main.py https://example.com/ "#main-content"
+
+3. Analyser plusieurs zones:
+   python3 main.py https://example.com/ "#main-content, .article-content"
+
+Note: Les sélecteurs CSS doivent être entre guillemets pour éviter les problèmes d'interprétation.
+      """
+    )
+    
+    parser.add_argument("url", 
+                       help="URL du site à analyser (ex: https://example.com/)")
+    parser.add_argument("selector", 
+                       help="Sélecteur CSS pour cibler les zones à analyser (ex: '#content' ou '.main-content')")
+    return parser
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 def load_config():
     config_path = 'config.json'
@@ -56,62 +97,64 @@ def run_analysis(crawl_id):
         run_command(['python3', '02_analyse.py', crawl_id])
     except subprocess.CalledProcessError as e:
         logging.error(f"Analysis failed with error code {e.returncode}")
-
-def main(url, selector):
+  
+def main(url=None, selector=None):
+    parser = setup_argument_parser()
+    
+    # Si les arguments ne sont pas fournis directement, les prendre des args du parser
+    if url is None or selector is None:
+        args = parser.parse_args()
+        url = args.url
+        selector = args.selector
+    
     if not validate_url(url):
-        logging.error(f"Invalid URL: {url}")
-        logging.info("Please provide a valid URL (e.g., https://www.example.com)")
+        logging.error(f"URL invalide: {url}")
+        logging.info("L'URL doit commencer par http:// ou https://")
         return
 
-    config = load_config()
+    logging.info(f"🎯 Analyse de {url} avec le sélecteur: {selector}")
 
+    config = load_config()
     if "HUGGINGFACEHUB_API_TOKEN" not in config:
-        logging.error("Error: HUGGINGFACEHUB_API_TOKEN not found in config.json")
+        logging.error("❌ Erreur: HUGGINGFACEHUB_API_TOKEN non trouvé dans config.json")
         return
 
     os.environ["HUGGINGFACEHUB_API_TOKEN"] = config["HUGGINGFACEHUB_API_TOKEN"]
 
-    logging.info("Starting crawl process...")
+    logging.info("🔄 Démarrage du crawl...")
     crawl_id = run_crawl(url)
     if not crawl_id:
-        logging.error("Crawl failed.")
+        logging.error("❌ Échec du crawl")
         return
 
-    logging.info(f"Crawl completed with ID: {crawl_id}")
-    logging.info("Starting internal links crawl process...")
+    logging.info(f"✅ Crawl terminé avec l'ID: {crawl_id}")
+    logging.info("🔍 Analyse des liens internes...")
     run_internal_links_crawl(crawl_id, selector)
 
-    logging.info("Internal links crawl completed.")
-    logging.info("Starting analysis process...")
+    logging.info("✅ Analyse des liens terminée")
+    logging.info("🧠 Démarrage de l'analyse sémantique...")
     run_analysis(crawl_id)
 
-    logging.info("Analysis completed.")
+    logging.info(f"""
+    ✨ Analyse terminée avec succès !
+    
+    Pour visualiser les résultats :
+    1. Ouvrez votre navigateur
+    2. Accédez au tableau de bord de visualisation
+    3. Sélectionnez le crawl avec l'ID: {crawl_id}
+    """)
 
 def cleanup():
-    # Ajoutez ici le code pour nettoyer les fichiers temporaires ou libérer les ressources
-    logging.info("Cleaning up resources...")
+    logging.info("🧹 Nettoyage des ressources...")
 
 if __name__ == "__main__":
-    print("""
-    Bienvenue sur l'application de Visualisation Sémantique !
-
-    Cette application vous permet de :
-    1. Lancer un crawl d'un site web pour en extraire le contenu.
-    2. Analyser les liens internes du site.
-    3. Réaliser une analyse sémantique pour déterminer les thématiques dominantes.
-    4. Visualiser les résultats sous forme de graphes interactifs.
+    # Afficher la bannière une seule fois au début
+    print_banner()
     
-
-    Étapes pour utiliser l'application :
-    1. Fournissez l'URL du site web à crawler.
-    2. Fournissez le sélecteur CSS pour extraire les liens internes.
-    3. Patientez pendant que l'application effectue les analyses.
-    4. Visualisez les résultats via les serveurs web et Flask.
-    """)
-    
+    # Vérifier les arguments
     if len(sys.argv) < 3:
-        print("Usage: python3 main.py <URL> <CSS Selector>")
-        print("\nExample: python3 main.py https://www.example-domain.com .content")
+        parser = setup_argument_parser()
+        parser.print_help()
         sys.exit(1)
     
     url = sys.argv[1]
@@ -119,7 +162,10 @@ if __name__ == "__main__":
     
     try:
         main(url, selector)
+    except KeyboardInterrupt:
+        logging.info("\n⛔ Analyse interrompue par l'utilisateur")
+        sys.exit(1)
     except Exception as e:
-        logging.error(f"An unexpected error occurred: {e}")
+        logging.error(f"❌ Une erreur inattendue est survenue: {e}")
     finally:
         cleanup()

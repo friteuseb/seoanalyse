@@ -68,27 +68,33 @@ def get_documents_from_redis(crawl_id):
         logging.error(f"Erreur lors de la récupération des documents: {e}")
         return {}
 
-def extract_internal_links(base_url, content, selector):
+def extract_internal_links(base_url, content, selector=None):
     """
-    Extrait uniquement les liens internes présents dans la zone de contenu spécifiée.
+    Extrait uniquement les liens internes présents dans la zone de contenu spécifiée 
+    ou dans toute la page si aucun sélecteur n'est fourni.
     
     Args:
         base_url (str): L'URL de base du site
         content (str): Le contenu HTML de la page
-        selector (str): Le sélecteur CSS pour cibler la zone de contenu principale
+        selector (str, optional): Le sélecteur CSS pour cibler la zone de contenu principale.
+            Si None, analyse toute la page.
     
     Returns:
-        list: Liste des URLs internes trouvées dans la zone de contenu
+        list: Liste des URLs internes trouvées
     """
     soup = BeautifulSoup(content, 'html.parser')
     
-    # Trouver la zone de contenu spécifiée
-    content_area = soup.select(selector)
-    if not content_area:
-        logging.warning(f"❌ Aucune zone trouvée avec le sélecteur {selector} pour {base_url}")
-        return []
-    
-    logging.info(f"✅ Zone de contenu trouvée pour {base_url}")
+    # Si aucun sélecteur n'est fourni, utiliser le body entier
+    if not selector:
+        content_area = [soup.find('body')] if soup.find('body') else []
+        logging.info(f"✅ Analyse de la page entière pour {base_url}")
+    else:
+        # Trouver la zone de contenu spécifiée
+        content_area = soup.select(selector)
+        if not content_area:
+            logging.warning(f"❌ Aucune zone trouvée avec le sélecteur {selector} pour {base_url}")
+            return []
+        logging.info(f"✅ Zone de contenu trouvée pour {base_url}")
     
     links = set()
     base_domain = urlparse(base_url).netloc
@@ -126,7 +132,8 @@ def extract_internal_links(base_url, content, selector):
             except Exception as e:
                 logging.warning(f"Erreur lors du traitement de l'URL {href}: {e}")
 
-    logging.info(f"🔍 Liens trouvés dans la zone de contenu : {len(links)}")
+    zone_type = "la page entière" if not selector else "la zone de contenu"
+    logging.info(f"🔍 Liens trouvés dans {zone_type} : {len(links)}")
     return list(links)
 
 def crawl_with_retry(url, max_retries=3, delay=1):

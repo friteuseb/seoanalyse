@@ -211,13 +211,43 @@ def save_graph_to_redis(crawl_id, documents, clusters, labels):
         "links": valid_links
     }
 
-    # Sauvegarde dans Redis
+    # Sauvegarde dans Redis avec logging détaillé
     try:
-        r.set(f"{crawl_id}_simple_graph", json.dumps(graph_data, default=convert_to_serializable))
-        r.set(f"{crawl_id}_clustered_graph", json.dumps(graph_data, default=convert_to_serializable))
-        logging.info("\nGraphe sauvegardé avec succès dans Redis")
+        # S'assurer que le crawl_id est bien formaté
+        base_crawl_id = crawl_id.split(':')[0] if ':' in crawl_id else crawl_id
+        
+        # Construire les clés
+        simple_key = f"{base_crawl_id}_simple_graph"
+        clustered_key = f"{base_crawl_id}_clustered_graph"
+        
+        logging.info(f"Tentative de sauvegarde des graphes...")
+        logging.info(f"Clé simple: {simple_key}")
+        logging.info(f"Clé clustered: {clustered_key}")
+        
+        # Sérialiser les données une seule fois
+        graph_json = json.dumps(graph_data, default=convert_to_serializable)
+        
+        # Sauvegarder les deux versions
+        r.set(simple_key, graph_json)
+        r.set(clustered_key, graph_json)
+        
+        # Vérifier immédiatement la sauvegarde
+        if r.exists(simple_key) and r.exists(clustered_key):
+            logging.info("✅ Graphes sauvegardés avec succès dans Redis")
+            logging.info(f"Taille des données : {len(graph_json)} bytes")
+            
+            # Liste toutes les clés liées à ce crawl pour debug
+            keys = list(r.scan_iter(f"{base_crawl_id}*"))
+            logging.info("Clés Redis associées à ce crawl :")
+            for key in keys:
+                logging.info(f"- {key.decode('utf-8')}")
+        else:
+            logging.error("❌ Échec de la vérification post-sauvegarde")
+            
     except Exception as e:
-        logging.error(f"Erreur lors de la sauvegarde dans Redis: {e}")
+        logging.error(f"❌ Erreur lors de la sauvegarde dans Redis: {str(e)}")
+        logging.error(f"Crawl ID: {crawl_id}")
+        logging.error(f"Base crawl ID: {base_crawl_id}")
         raise
 
 def convert_to_serializable(obj):

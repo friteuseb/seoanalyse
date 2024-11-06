@@ -43,30 +43,35 @@ def setup_argument_parser():
 ║                   EXEMPLES D'UTILISATION                     ║
 ╚══════════════════════════════════════════════════════════════╝
 """, "yellow", attrs=["bold"]) + """
-1. Analyser une zone par classe CSS:
+1. Analyser la page entière:
+   """ + colored('python3 main.py https://example.com/', "cyan") + """
+
+2. Analyser une zone par classe CSS:
    """ + colored('python3 main.py https://example.com/ ".content"', "cyan") + """
 
-2. Analyser une zone par ID:
+3. Analyser une zone par ID:
    """ + colored('python3 main.py https://example.com/ "#main-content"', "cyan") + """
 
-3. Analyser plusieurs zones:
+4. Analyser plusieurs zones:
    """ + colored('python3 main.py https://example.com/ "#main-content, .article-content"', "cyan") + """
 
-4. Analyser en excluant des zones:
+5. Analyser en excluant des zones:
    """ + colored('python3 main.py https://example.com/ "#main-content:not(.navigation)"', "cyan") + """
    """ + colored('python3 main.py https://example.com/ ".content:not(#menu):not(.sidebar)"', "cyan") + """
 
 """ + colored("📝 NOTES:", "yellow", attrs=["bold"]) + """
+""" + colored("•", "green") + """ Sans sélecteur CSS spécifié, l'analyse portera sur toute la page
 """ + colored("•", "green") + """ Les sélecteurs CSS doivent être entre guillemets
 """ + colored("•", "green") + """ Utilisez :not() pour exclure les zones non pertinentes
-""" + colored("•", "green") + """ Seuls les liens des zones sélectionnées seront analysés
 """ + colored("•", "green") + """ L'analyse exclut automatiquement les liens externes
 """)
     
     parser.add_argument("url", 
                        help=colored("URL du site à analyser (ex: https://example.com/)", "cyan"))
     parser.add_argument("selector", 
-                       help=colored("Sélecteur CSS pour cibler les zones à analyser", "cyan"))
+                       nargs='?',  # Rend l'argument optionnel
+                       default=None,  # Valeur par défaut si non spécifié
+                       help=colored("Sélecteur CSS pour cibler les zones à analyser (optionnel)", "cyan"))
     return parser
 
 # Configuration du logging
@@ -126,17 +131,21 @@ def main(url=None, selector=None):
     parser = setup_argument_parser()
     
     # Si les arguments ne sont pas fournis directement, les prendre des args du parser
-    if url is None or selector is None:
+    if url is None:
         args = parser.parse_args()
         url = args.url
-        selector = args.selector
+        selector = args.selector  # Peut être None si non spécifié
     
     if not validate_url(url):
         logging.error(f"URL invalide: {url}")
         logging.info("L'URL doit commencer par http:// ou https://")
         return
 
-    logging.info(f"🎯 Analyse de {url} avec le sélecteur: {selector}")
+    # Message adaptatif selon la présence ou non du sélecteur
+    if selector:
+        logging.info(f"🎯 Analyse de {url} avec le sélecteur: {selector}")
+    else:
+        logging.info(f"🎯 Analyse complète de {url}")
 
     config = load_config()
     if "HUGGINGFACEHUB_API_TOKEN" not in config:
@@ -152,15 +161,28 @@ def main(url=None, selector=None):
         return
 
     logging.info(f"✅ Crawl terminé avec l'ID: {crawl_id}")
-    logging.info("🔍 Analyse des liens internes...")
+    
+    # Message adaptatif pour l'analyse des liens
+    if selector:
+        logging.info(f"🔍 Analyse des liens internes dans la zone sélectionnée...")
+    else:
+        logging.info(f"🔍 Analyse des liens internes sur toute la page...")
+    
     run_internal_links_crawl(crawl_id, selector)
 
     logging.info("✅ Analyse des liens terminée")
     logging.info("🧠 Démarrage de l'analyse sémantique...")
     run_analysis(crawl_id)
 
+    # Message de fin avec information sur la portée de l'analyse
+    scope = "la zone sélectionnée" if selector else "toute la page"
     logging.info(f"""
     ✨ Analyse terminée avec succès !
+    
+    Résumé :
+    • URL analysée : {url}
+    • Portée : {scope}
+    • ID du crawl : {crawl_id}
     
     Pour visualiser les résultats :
     1. Ouvrez votre navigateur
@@ -168,6 +190,7 @@ def main(url=None, selector=None):
     3. Sélectionnez le crawl avec l'ID: {crawl_id}
     """)
 
+    
 def cleanup():
     logging.info("🧹 Nettoyage des ressources...")
 

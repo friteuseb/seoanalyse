@@ -34,6 +34,7 @@ class CoconAnalyzer:
     def load_data(self):
         """Charge et parse les données depuis Redis"""
         pattern = f"{self.crawl_id}:doc:*"
+
         
         # Premier passage : charger toutes les données
         for key in self.redis.scan_iter(pattern):
@@ -43,6 +44,7 @@ class CoconAnalyzer:
 
             url = doc_data[b'url'].decode('utf-8').rstrip('/')
             internal_links = json.loads(doc_data.get(b'internal_links_out', b'[]').decode('utf-8'))
+            
             cluster = int(doc_data.get(b'cluster', b'0').decode('utf-8'))
             label = doc_data.get(b'label', b'').decode('utf-8')
             links_count = int(doc_data.get(b'links_count', b'0').decode('utf-8'))
@@ -75,36 +77,183 @@ class CoconAnalyzer:
             # Identifier la racine (page avec le plus de liens sortants)
             if not self.root_url or links_count > self.pages.get(self.root_url, PageMetrics(url='', depth=0, cluster=0, label='', incoming_links=0, outgoing_links=0, internal_pagerank=0.0, semantic_relevance=0.0, content_length=0)).outgoing_links:
                 self.root_url = url
-
-        self._update_metrics()
-
+            self._update_metrics()
 
     def _update_metrics(self):
-        """Calcule les métriques basées sur le graphe"""
-        # Construction du dictionnaire des liens entrants
-        incoming_links = defaultdict(list)
+        # Identifie la racine comme étant la page avec le plus de liens sortants
+        max_links = 0
         for url, metrics in self.pages.items():
-            for target in self.graph.successors(url):
-                incoming_links[target].append(url)
+            doc_data = self.redis.hgetall(f"{self.crawl_id}:doc:{url.split('/')[-1]}")
+            links_count = int(doc_data.get(b'links_count', b'0').decode('utf-8'))
+            if links_count > max_links:
+                max_links = links_count
+                self.root_url = url
+
+        # Ne pas reconstruire le graphe, utiliser celui qui existe déjà
+        incoming_links = defaultdict(set)
+        
+        # Calculer les liens entrants à partir du graphe existant
+        for edge in self.graph.edges():
+            source, target = edge
+            incoming_links[target].add(source)
 
         # Mise à jour des métriques pour chaque page
         for url, metrics in self.pages.items():
-            # Liens sortants (directement depuis Redis)
-            metrics.outgoing_links = self.graph.out_degree(url)
-            # Liens entrants (calculés à partir des liens sortants des autres pages)
+            # Mise à jour des liens
             metrics.incoming_links = len(incoming_links[url])
-            
-            # Profondeur depuis la racine
-            try:
-                metrics.depth = nx.shortest_path_length(self.graph, self.root_url, url)
-            except nx.NetworkXNoPath:
-                metrics.depth = -1
+            metrics.outgoing_links = self.graph.out_degree(url)
 
-        # Calcul du PageRank
-        pageranks = self._calculate_pagerank()
-        for url, score in pageranks.items():
-            if url in self.pages:
-                self.pages[url].internal_pagerank = score
+        # Calcul du PageRank sur le graphe existant
+        pagerank_scores = nx.pagerank(self.graph)
+        
+        # Calcul des profondeurs
+        try:
+            depth_dict = dict(nx.shortest_path_length(self.graph, self.root_url))
+        except nx.NetworkXError:
+            depth_dict = {url: 1 for url in self.pages}
+
+        # Mise à jour des métriques finales
+        for url, metrics in self.pages.items():
+            metrics.depth = depth_dict.get(url, 1)
+            metrics.internal_pagerank = pagerank_scores.get(url, 0.0)
+
+    def calculate_semantic_coherence(self):
+        """Analyse la cohérence sémantique des clusters"""
+        cluster_coherence = {}
+        
+        for cluster_id, urls in self.clusters.items():
+            # Ignorer le cluster qui contient la page d'accueil si c'est un cluster à une seule page
+            if len(urls) == 1 and urls[0] == self.root_url:
+                continue
+                
+            labels = []
+            internal_links = 0
+            external_links = 0
+            
+            # Compter les liens entre pages du même cluster
+            for url in urls:
+                doc_data = self.redis.hgetall(f"{self.crawl_id}:doc:{url.split('/')[-1]}")
+                labels.append(self.pages[url].label)
+                outgoing_links = json.loads(doc_data.get(b'internal_links_out', b'[]').decode('utf-8'))
+                
+                for target in outgoing_links:
+                    if target in self.pages:  # Ne compter que les liens vers des pages existantes
+                        if target in urls:
+                            internal_links += 1
+                        else:
+                            external_links += 1
+
+            # Calculer les métriques de cohérence
+            total_links = internal_links + external_links
+            coherence_score = internal_links / total_links if total_links > 0 else 0
+            internal_density = internal_links / len(urls) if urls else 0
+            
+            cluster_coherence[cluster_id] = {
+                'coherence_score': round(coherence_score, 2),
+                'common_terms': self._extract_common_terms(labels),
+                'internal_links_density': round(internal_density, 2),
+                'internal_links': internal_links,
+                'external_links': external_links,
+                'size': len(urls)
+            }
+                
+        return cluster_coherence
+
+    def _analyze_clusters(self):
+        """Analyse détaillée des clusters"""
+        cluster_metrics = {}
+        
+        for cluster_id, urls in self.clusters.items():
+            internal_links = 0
+            external_links = 0
+            depths = []
+            pageranks = []
+            
+            # Vérifier si c'est le cluster de la page d'accueil
+            is_home_cluster = len(urls) == 1 and urls[0] == self.root_url
+            
+            # Compter les liens réels entre pages
+            for url in urls:
+                if url not in self.pages:
+                    continue
+                    
+                metrics = self.pages[url]
+                if metrics.depth >= 0:
+                    depths.append(metrics.depth)
+                pageranks.append(metrics.internal_pagerank)
+                
+                # Compter les liens réels à partir du graphe
+                for target in self.graph.successors(url):
+                    if target in urls:
+                        internal_links += 1
+                    else:
+                        external_links += 1
+            
+            # Adapter les métriques selon le type de cluster
+            if is_home_cluster:
+                status = "✅ Page d'accueil"
+                cohesion = 1.0
+            else:
+                if len(urls) > 0:
+                    cohesion = internal_links / (len(urls) * (len(urls) - 1)) if len(urls) > 1 else 0
+                else:
+                    cohesion = 0
+                
+                if cohesion < 0.5:
+                    status = "⚠️  À renforcer"
+                elif cohesion > 1:
+                    status = "✅ Excellent"
+                else:
+                    status = "👍 Correct"
+            
+            cluster_metrics[cluster_id] = {
+                "size": len(urls),
+                "label": self.pages[urls[0]].label if urls else "Unknown",
+                "internal_links": internal_links,
+                "external_links": external_links,
+                "cohesion": round(cohesion, 2),
+                "avg_depth": round(np.mean(depths) if depths else -1, 2),
+                "avg_pagerank": round(np.mean(pageranks) if pageranks else 0, 4),
+                "is_home": is_home_cluster,
+                "status": status
+            }
+                    
+        return cluster_metrics
+
+
+    def _detect_issues(self):
+        """Détecte les problèmes potentiels dans le cocon"""
+        issues = {
+            "orphan_pages": [],
+            "dead_ends": [],
+            "deep_pages": [],
+            "weak_clusters": []
+        }
+
+        for url, metrics in self.pages.items():
+            # Une page est orpheline si elle n'a aucun lien entrant ET n'est pas la page d'accueil
+            if metrics.incoming_links == 0 and url != self.root_url:
+                issues["orphan_pages"].append(url)
+            
+            # Une page est un cul-de-sac si elle n'a aucun lien sortant vers d'autres pages du site
+            if metrics.outgoing_links == 0:
+                issues["dead_ends"].append(url)
+                
+            if metrics.depth > 3:
+                issues["deep_pages"].append(url)
+
+        # Analyse des clusters reste inchangée...
+        return issues
+    
+    def verify_links(self):
+        """Vérifie la cohérence des liens"""
+        for url, metrics in self.pages.items():
+            incoming = list(self.graph.predecessors(url))
+            outgoing = list(self.graph.successors(url))
+            print(f"Page: {url}")
+            print(f"Liens entrants: {len(incoming)} ({incoming})")
+            print(f"Liens sortants: {len(outgoing)} ({outgoing})")
+
 
     def _calculate_pagerank(self, alpha=0.85, max_iter=100, tol=1e-6):
         """
@@ -194,6 +343,9 @@ class CoconAnalyzer:
             depths = []
             pageranks = []
             
+            # Si c'est le cluster de la page d'accueil (un seul url avec beaucoup de liens sortants)
+            is_home_cluster = len(urls) == 1 and urls[0] == self.root_url
+            
             for url in urls:
                 if url not in self.pages:
                     continue
@@ -210,16 +362,35 @@ class CoconAnalyzer:
                     else:
                         external_links += 1
             
+            # Adaptation des métriques pour la page d'accueil
+            if is_home_cluster:
+                status = "✅ Page d'accueil"
+                cohesion = 1.0  # La cohésion n'a pas de sens pour une seule page
+            else:
+                if len(urls) > 0:
+                    cohesion = internal_links / len(urls)
+                else:
+                    cohesion = 0
+                
+                if cohesion < 0.5:
+                    status = "⚠️  À renforcer"
+                elif cohesion > 1:
+                    status = "✅ Excellent"
+                else:
+                    status = "👍 Correct"
+            
             cluster_metrics[cluster_id] = {
                 "size": len(urls),
                 "label": self.pages[urls[0]].label if urls else "Unknown",
                 "internal_links": internal_links,
                 "external_links": external_links,
-                "cohesion": round(internal_links / len(urls) if len(urls) > 0 else 0, 2),
+                "cohesion": round(cohesion, 2),
                 "avg_depth": round(np.mean(depths) if depths else -1, 2),
-                "avg_pagerank": round(np.mean(pageranks) if pageranks else 0, 4)
+                "avg_pagerank": round(np.mean(pageranks) if pageranks else 0, 4),
+                "is_home": is_home_cluster,
+                "status": status
             }
-            
+                
         return cluster_metrics
 
     def _analyze_links(self):
@@ -251,34 +422,6 @@ class CoconAnalyzer:
             
         return sorted(pages_metrics, key=lambda x: x['pagerank'], reverse=True)[:limit]
 
-    def _detect_issues(self):
-        """Détecte les problèmes potentiels dans le cocon"""
-        issues = {
-            "orphan_pages": [],
-            "dead_ends": [],
-            "deep_pages": [],
-            "weak_clusters": []
-        }
-
-        for url, metrics in self.pages.items():
-            if metrics.incoming_links == 0 and url != self.root_url:
-                issues["orphan_pages"].append(url)
-            if metrics.outgoing_links == 0:
-                issues["dead_ends"].append(url)
-            if metrics.depth > 3:  # Pages trop profondes
-                issues["deep_pages"].append(url)
-
-        # Détection des clusters faiblement connectés
-        for cluster_id, urls in self.clusters.items():
-            internal_links = sum(1 for u in urls for v in self.graph.successors(u) if v in urls)
-            if internal_links / len(urls) < 1:  # Moins d'un lien interne par page en moyenne
-                issues["weak_clusters"].append({
-                    "cluster": cluster_id,
-                    "label": self.pages[urls[0]].label if urls else "Unknown",
-                    "cohesion": round(internal_links / len(urls), 2)
-                })
-
-        return issues
 
     def _calculate_quality_score(self):
         """Calcule un score global de qualité du cocon"""
@@ -302,6 +445,7 @@ class CoconAnalyzer:
         
         return round(max(0, min(100, base_score - penalties)), 2)
 
+
     def generate_report(self, results):
         """Génère un rapport d'analyse concis et actionnable"""
         
@@ -313,39 +457,55 @@ class CoconAnalyzer:
 
         # Métriques Essentielles
         report.append("\n🔍 MÉTRIQUES CLÉS")
-        metrics = results["general_metrics"]
+        general_metrics = results["general_metrics"] 
         report.append(f"""
-    - Pages totales : {metrics['total_pages']}
-    - Profondeur moyenne : {metrics['average_depth']:.1f} clics
-    - Profondeur max : {metrics['max_depth']} clics
-    - Liens internes : {metrics['total_internal_links']}
-    - Moyenne liens/page : {metrics['average_links_per_page']:.1f}
-    """)
+        - Pages totales : {general_metrics['total_pages']}
+        - Profondeur moyenne : {general_metrics['average_depth']:.1f} clics
+        - Profondeur max : {general_metrics['max_depth']} clics
+        - Liens internes : {general_metrics['total_internal_links']}
+        - Moyenne liens/page : {general_metrics['average_links_per_page']:.1f}
+        """)
 
-        # Santé des Clusters
+        # Rapport Cluster
         report.append("\n📈 CLUSTERS THÉMATIQUES")
         for cluster_id, data in results["cluster_metrics"].items():
-            if data['cohesion'] < 0.5:
-                status = "⚠️  À renforcer"
-            elif data['cohesion'] > 1:
-                status = "✅ Excellent"
+            if data['is_home']:
+                report.append(f"""
+        Cluster {cluster_id} - {data['label']} {data['status']}
+        - Type : Page d'accueil du guide
+        - Liens sortants : {data['external_links']}
+        - PageRank : {data['avg_pagerank']:.4f}""")
             else:
-                status = "👍 Correct"
-                
-            report.append(f"""
-    Cluster {cluster_id} - {data['label']} {status}
-    - Pages : {data['size']}
-    - Cohésion : {data['cohesion']:.2f}
-    - Liens internes/externes : {data['internal_links']}/{data['external_links']}""")
+                report.append(f"""
+        Cluster {cluster_id} - {data['label']} {data['status']}
+        - Pages : {data['size']}
+        - Cohésion : {data['cohesion']:.2f}
+        - Liens internes/externes : {data['internal_links']}/{data['external_links']}
+        - PageRank moyen : {data['avg_pagerank']:.4f}""")
 
-        # Pages Critiques
+        # Pages Stratégiques avec vérification détaillée des liens
         report.append("\n⭐ PAGES STRATÉGIQUES")
         top_pages = sorted(self.pages.items(), key=lambda x: x[1].internal_pagerank, reverse=True)[:3]
         for url, metrics in top_pages:
+            if url == self.root_url:
+                role = "Page d'accueil"
+            else:
+                role = f"Cluster {metrics.cluster}"
+            
+            # Compte détaillé des liens
+            incoming = {source.rstrip('/') for source in self.graph.predecessors(url)}
+            outgoing = {target.rstrip('/') for target in self.graph.successors(url)}
+            
+            # Calcul sécurisé du ratio entrée/sortie
+            ratio = len(incoming)/len(outgoing) if len(outgoing) > 0 else 0
+            
             report.append(f"""
-    {url}
-    - PageRank : {metrics.internal_pagerank:.4f}
-    - Liens entrants/sortants : {metrics.incoming_links}/{metrics.outgoing_links}""")
+        {url}
+        - Rôle : {role}
+        - PageRank : {metrics.internal_pagerank:.4f}
+        - Liens entrants uniques : {len(incoming)} sources uniques
+        - Liens sortants uniques : {len(outgoing)} destinations uniques
+        - Ratio entrée/sortie : {ratio:.2f}""")
 
         # Problèmes Détectés
         issues = results["issues"]
@@ -376,23 +536,34 @@ class CoconAnalyzer:
             status = "Bon cocon avec optimisations possibles"
         else:
             status = "Excellent cocon sémantique"
-            
+                
         report.append(f"Diagnostic : {status}")
 
         # Actions Prioritaires
         report.append("\n📝 ACTIONS PRIORITAIRES")
         recommendations = []
-        if metrics['average_depth'] > 3:
+        if general_metrics['average_depth'] > 3:
             recommendations.append("• Réduire la profondeur moyenne (créer des raccourcis)")
         if issues['orphan_pages']:
             recommendations.append("• Ajouter des liens vers les pages orphelines listées")
-        if any(c['cohesion'] < 0.5 for c in results["cluster_metrics"].values()):
+        if any(c['cohesion'] < 0.5 for c in results["cluster_metrics"].values() if not c.get('is_home', False)):
             recommendations.append("• Renforcer les liens entre pages de même thématique")
-        
+
         report.extend(recommendations if recommendations else ["✅ Aucune action critique requise"])
-
         return "\n".join(report)
+        
+    def _verify_links(self):
+        """Vérifie la cohérence des liens pour debug"""
+        for url in self.pages:
+            incoming = {source.rstrip('/') for source in self.graph.predecessors(url)}
+            outgoing = {target.rstrip('/') for target in self.graph.successors(url)}
+            if len(incoming) != self.pages[url].incoming_links or len(outgoing) != self.pages[url].outgoing_links:
+                logging.warning(f"Incohérence pour {url}:")
+                logging.warning(f"Stocké : in={self.pages[url].incoming_links}, out={self.pages[url].outgoing_links}")
+                logging.warning(f"Calculé : in={len(incoming)}, out={len(outgoing)}")
 
+
+# En dehors de la classe, à la fin du fichier :
 def main(crawl_id):
     redis_port = subprocess.check_output(
         "ddev describe -j | jq -r '.raw.services[\"redis-1\"].host_ports | split(\",\")[0]'", 

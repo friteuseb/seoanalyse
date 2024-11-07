@@ -1,0 +1,109 @@
+
+==================================================
+📊 RAPPORT D'ANALYSE DU COCON SÉMANTIQUE
+==================================================
+
+🔍 MÉTRIQUES CLÉS
+
+        - Pages totales : 62
+        - Profondeur moyenne : 1.0 clics
+        - Profondeur max : 1 clics
+        - Liens internes : 485
+        - Moyenne liens/page : 7.8
+        
+
+📈 CLUSTERS THÉMATIQUES
+
+        Cluster 3 - sonothérapie être vibrations domicile cette ✅ Excellent
+        - Pages : 20
+        - Cohésion : 2.95
+        - Liens internes/externes : 59/76
+        - PageRank moyen : 0.0141
+
+        Cluster 0 - gong bain nuit vibrations corps ✅ Excellent
+        - Pages : 22
+        - Cohésion : 5.55
+        - Liens internes/externes : 122/31
+        - PageRank moyen : 0.0145
+
+        Cluster 1 - voyage sonore voyages sonores être ✅ Excellent
+        - Pages : 11
+        - Cohésion : 4.55
+        - Liens internes/externes : 50/33
+        - PageRank moyen : 0.0154
+
+        Cluster 2 - sonothérapie sons vibrations bols être 👍 Correct
+        - Pages : 8
+        - Cohésion : 1.00
+        - Liens internes/externes : 8/45
+        - PageRank moyen : 0.0135
+
+        Cluster 4 - sonothérapie gong comment bain nuit ✅ Page d'accueil
+        - Type : Page d'accueil du guide
+        - Liens sortants : 61
+        - PageRank : 0.0039
+
+⭐ PAGES STRATÉGIQUES
+
+        https://chadyagamma.fr/guide-sonotherapie/sonotherapie-voyage-sonore-bienfaits-essentiels
+        - Rôle : Cluster 1
+        - PageRank : 0.0239
+        - Liens entrants uniques : 13 sources uniques
+        - Liens sortants uniques : 13 destinations uniques
+        - Ratio entrée/sortie : 1.00
+
+        https://chadyagamma.fr/guide-sonotherapie/sonotherapie-bienfaits-voyage-sonore
+        - Rôle : Cluster 1
+        - PageRank : 0.0232
+        - Liens entrants uniques : 12 sources uniques
+        - Liens sortants uniques : 12 destinations uniques
+        - Ratio entrée/sortie : 1.00
+
+        https://chadyagamma.fr/guide-sonotherapie/sonotherapie-bienfaits-sante
+        - Rôle : Cluster 3
+        - PageRank : 0.0229
+        - Liens entrants uniques : 12 sources uniques
+        - Liens sortants uniques : 12 destinations uniques
+        - Ratio entrée/sortie : 1.00
+
+🎯 SCORE GLOBAL : 92.16/100
+Diagnostic : Excellent cocon sémantique
+
+📝 ACTIONS PRIORITAIRES
+✅ Aucune action critique requise
+
+🔄 FLUX THÉMATIQUE
+
+🎯 COHÉRENCE SÉMANTIQUE
+
+        Cluster 3:
+        - Score de cohérence: 0.44
+        - Termes communs: domicile, sonothérapie, vibrations, être, cette
+        - Densité de liens internes: 2.95
+        - Liens internes: 59
+        - Liens externes: 76
+        - Taille du cluster: 20
+
+        Cluster 0:
+        - Score de cohérence: 0.8
+        - Termes communs: bain, corps, nuit, gong, vibrations
+        - Densité de liens internes: 5.55
+        - Liens internes: 122
+        - Liens externes: 31
+        - Taille du cluster: 22
+
+        Cluster 1:
+        - Score de cohérence: 0.6
+        - Termes communs: voyages, sonore, voyage, sonores, être
+        - Densité de liens internes: 4.55
+        - Liens internes: 50
+        - Liens externes: 33
+        - Taille du cluster: 11
+
+        Cluster 2:
+        - Score de cohérence: 0.15
+        - Termes communs: bols, sons, sonothérapie, être, vibrations
+        - Densité de liens internes: 1.0
+        - Liens internes: 8
+        - Liens externes: 45
+        - Taille du cluster: 8

@@ -1,226 +1,82 @@
 
-================================================================================
-📊 ANALYSE DU COCON SÉMANTIQUE
-================================================================================
+==================================================
+📊 RAPPORT D'ANALYSE DU COCON SÉMANTIQUE
+==================================================
 
+🔍 MÉTRIQUES CLÉS
 
-    Ce rapport analyse la structure et la qualité du cocon sémantique de votre site. 
-    Il évalue plusieurs aspects critiques pour le SEO :
-    - La profondeur de l'architecture
-    - La qualité du maillage interne
-    - La cohésion des clusters thématiques
-    - La distribution des liens
-    - Les potentiels problèmes structurels
-        
+    - Pages totales : 62
+    - Profondeur moyenne : 1.0 clics
+    - Profondeur max : 1 clics
+    - Liens internes : 485
+    - Moyenne liens/page : 7.8
+    
 
---------------------------------------------------
-🔍 MÉTRIQUES GLOBALES
---------------------------------------------------
+📈 CLUSTERS THÉMATIQUES
 
+    Cluster 3 - sonothérapie être vibrations domicile cette ✅ Excellent
+    - Pages : 20
+    - Cohésion : 2.95
+    - Liens internes/externes : 59/76
+    - PageRank moyen : 0.0161
 
-    Ces métriques donnent une vue d'ensemble de la structure du site :
-    - Total Pages : Nombre total de pages analysées
-    - Average Depth : Distance moyenne des pages depuis la page racine
-    - Max Depth : Niveau de profondeur maximum (idéalement ≤ 3)
-    - Total Internal Links : Nombre total de liens internes
-    - Average Links per Page : Moyenne des liens sortants par page (idéalement > 3)
-        
-  • Total Pages: 62
-  • Average Depth: 0.98
-  • Max Depth: 1
-  • Total Internal Links: 485
-  • Average Links Per Page: 7.82
+    Cluster 0 - gong bain nuit vibrations corps ✅ Excellent
+    - Pages : 22
+    - Cohésion : 5.55
+    - Liens internes/externes : 122/31
+    - PageRank moyen : 0.0161
 
---------------------------------------------------
-📈 ANALYSE DES CLUSTERS SÉMANTIQUES
---------------------------------------------------
+    Cluster 1 - voyage sonore voyages sonores être ✅ Excellent
+    - Pages : 11
+    - Cohésion : 4.55
+    - Liens internes/externes : 50/33
+    - PageRank moyen : 0.0161
 
+    Cluster 2 - sonothérapie sons vibrations bols être 👍 Correct
+    - Pages : 8
+    - Cohésion : 1.00
+    - Liens internes/externes : 8/45
+    - PageRank moyen : 0.0161
 
-    Les clusters représentent des groupes de pages thématiquement liées.
-    Pour chaque cluster, nous analysons :
-    - Size : Nombre de pages dans le cluster
-    - Internal Links : Liens entre pages du même cluster
-    - External Links : Liens vers d'autres clusters
-    - Cohesion : Ratio liens internes/taille (plus il est élevé, plus le cluster est cohérent)
-    - Avg Depth : Profondeur moyenne des pages du cluster
-    - Avg PageRank : Importance moyenne des pages (algorithme de Google, 0-1)
-        
+    Cluster 4 - sonothérapie gong comment bain nuit ✅ Page d'accueil
+    - Type : Page d'accueil du guide
+    - Liens sortants : 61
+    - PageRank : 0.0161
 
-🔷 Cluster 3 - sonothérapie être vibrations domicile cette
-  • Size: 20
-  • Internal Links: 59
-  • External Links: 76
-  • Cohesion: 2.95
-  • Avg Depth: 1.0
-  • Avg Pagerank: 0.0141
+⭐ PAGES STRATÉGIQUES
 
-🔷 Cluster 0 - gong bain nuit vibrations corps
-  • Size: 22
-  • Internal Links: 122
-  • External Links: 31
-  • Cohesion: 5.55
-  • Avg Depth: 1.0
-  • Avg Pagerank: 0.0145
+    https://chadyagamma.fr/guide-sonotherapie/sonotherapie-comprendre-principes-mecanismes
+    - Rôle : Cluster 3
+    - PageRank : 0.0161
+    - Liens entrants uniques : 12 sources uniques
+    - Liens sortants uniques : 12 destinations uniques
+    - Ratio entrée/sortie : 1.00
 
-🔷 Cluster 1 - voyage sonore voyages sonores être
-  • Size: 11
-  • Internal Links: 50
-  • External Links: 33
-  • Cohesion: 4.55
-  • Avg Depth: 1.0
-  • Avg Pagerank: 0.0154
+    https://chadyagamma.fr/guide-sonotherapie/sonotherapie-combiner-nuit-gong-relaxation-bon
+    - Rôle : Cluster 0
+    - PageRank : 0.0161
+    - Liens entrants uniques : 6 sources uniques
+    - Liens sortants uniques : 6 destinations uniques
+    - Ratio entrée/sortie : 1.00
 
-🔷 Cluster 2 - sonothérapie sons vibrations bols être
-  • Size: 8
-  • Internal Links: 8
-  • External Links: 45
-  • Cohesion: 1.0
-  • Avg Depth: 1.0
-  • Avg Pagerank: 0.0135
+    https://chadyagamma.fr/guide-sonotherapie/sonotherapie-combiner-voyage-sonore-yoga
+    - Rôle : Cluster 1
+    - PageRank : 0.0161
+    - Liens entrants uniques : 7 sources uniques
+    - Liens sortants uniques : 7 destinations uniques
+    - Ratio entrée/sortie : 1.00
 
-🔷 Cluster 4 - sonothérapie gong comment bain nuit
-  • Size: 1
-  • Internal Links: 0
-  • External Links: 61
-  • Cohesion: 0.0
-  • Avg Depth: 0.0
-  • Avg Pagerank: 0.0039
+⚠️  ALERTES
+⚠️  62 pages orphelines
+⚠️  62 pages en impasse
 
---------------------------------------------------
-🔗 ANALYSE DU MAILLAGE INTERNE
---------------------------------------------------
+Pages orphelines prioritaires:
+• https://chadyagamma.fr/guide-sonotherapie/sonotherapie-comprendre-principes-mecanismes
+• https://chadyagamma.fr/guide-sonotherapie/sonotherapie-combiner-nuit-gong-relaxation-bon
+• https://chadyagamma.fr/guide-sonotherapie/sonotherapie-combiner-voyage-sonore-yoga
 
+🎯 SCORE GLOBAL : 2.16/100
+Diagnostic : Structure à retravailler en profondeur
 
-    Le maillage interne est crucial pour :
-    - La distribution du PageRank
-    - L'accessibilité des pages aux robots
-    - La compréhension de la hiérarchie du site
-
-    Métriques de connectivité :
-    - Strongly Connected Components : Groupes de pages mutuellement accessibles
-    - Weakly Connected Components : Groupes de pages connectées sans tenir compte de la direction
-
-    Distribution des liens :
-    - Min/Max Outgoing : Nombre minimum/maximum de liens sortants
-    - Avg Outgoing/Incoming : Moyenne des liens sortants/entrants par page
-        
-
-📊 Connectivity:
-  • Strongly Connected Components: 4
-  • Weakly Connected Components: 1
-
-📊 Link Distribution:
-  • Min Outgoing: 0
-  • Max Outgoing: 61
-  • Avg Outgoing: 7.58
-  • Avg Incoming: 7.58
-
---------------------------------------------------
-⭐ PAGES STRATÉGIQUES ET PAGERANK
---------------------------------------------------
-
-
-        Le PageRank est un algorithme qui mesure l'importance des pages selon leur position dans le graphe des liens.
-
-        Calcul du PageRank :
-        1. Chaque page reçoit un score initial égal (1/nombre total de pages)
-        2. À chaque itération :
-        - 85% du score est distribué aux pages liées proportionnellement
-        - 15% est distribué uniformément à toutes les pages
-        3. Le processus continue jusqu'à stabilisation des scores
-
-        Interprétation du PageRank :
-        - > 0.02 : Page très importante dans la structure
-        - 0.01-0.02 : Page moyennement importante
-        - < 0.01 : Page peu centrale dans le maillage
-
-        Distribution des liens :
-        - Liens entrants : Nombre de pages qui pointent vers la page
-        (Calculé en analysant les liens sortants de toutes les autres pages)
-        - Liens sortants : Nombre de liens vers d'autres pages
-        (Directement extrait des données de la page)
-
-        Top 5 des pages stratégiques :
-
-
-📄 https://chadyagamma.fr/guide-sonotherapie/sonotherapie-voyage-sonore-bienfaits-essentiels
-  • PageRank : 0.0239
-  • Liens entrants : 13
-  • Liens sortants : 13
-  • Ratio entrée/sortie : 1.00
-
-📄 https://chadyagamma.fr/guide-sonotherapie/sonotherapie-bienfaits-voyage-sonore
-  • PageRank : 0.0232
-  • Liens entrants : 12
-  • Liens sortants : 12
-  • Ratio entrée/sortie : 1.00
-
-📄 https://chadyagamma.fr/guide-sonotherapie/sonotherapie-bienfaits-sante
-  • PageRank : 0.0229
-  • Liens entrants : 12
-  • Liens sortants : 12
-  • Ratio entrée/sortie : 1.00
-
-📄 https://chadyagamma.fr/guide-sonotherapie/sonotherapie-nuit-gong-purification-guerison
-  • PageRank : 0.0229
-  • Liens entrants : 12
-  • Liens sortants : 11
-  • Ratio entrée/sortie : 1.09
-
-📄 https://chadyagamma.fr/guide-sonotherapie/sonotherapie-bienfaits-bain-gong-etre-mental
-  • PageRank : 0.0226
-  • Liens entrants : 12
-  • Liens sortants : 12
-  • Ratio entrée/sortie : 1.00
-
-        Note : Un bon équilibre entre liens entrants et sortants favorise une meilleure 
-        distribution du PageRank et une meilleure exploration par les moteurs.
-
---------------------------------------------------
-⚠️ PROBLÈMES DÉTECTÉS
---------------------------------------------------
-
-
-    Points d'attention prioritaires :
-    - Pages Orphelines : Pages sans liens entrants (hors page d'accueil)
-    - Impasses : Pages sans liens sortants
-    - Pages Profondes : Pages à plus de 3 clics de la racine
-    - Clusters Faibles : Groupes thématiques peu interconnectés
-        
-
-Nombre de problèmes détectés :
-  • Pages Orphelines: 0
-  • Impasses: 0
-  • Pages Profondes: 0
-  • Clusters Faibles: 1
-
---------------------------------------------------
-🎯 SCORE GLOBAL DE QUALITÉ
---------------------------------------------------
-
-
-    Score global : 92.16/100
-
-    Ce score est calculé en prenant en compte :
-    - Qualité du maillage (40%) : Nombre et distribution des liens internes
-    - Connectivité (30%) : Cohésion entre les différentes sections
-    - Architecture (30%) : Profondeur et accessibilité des pages
-
-    Pénalités appliquées pour :
-    - Pages orphelines (-10 points par 10% de pages)
-    - Pages trop profondes (-10 points par 10% de pages)
-
-    Interprétation :
-    - 90-100 : Excellent cocon sémantique
-    - 70-89  : Bon cocon avec quelques optimisations possibles
-    - 50-69  : Cocon moyen nécessitant des améliorations
-    - < 50   : Structure à retravailler en profondeur
-        
-
---------------------------------------------------
-📝 RECOMMANDATIONS
---------------------------------------------------
-
-
-Actions prioritaires recommandées :
-• Renforcer les liens entre pages thématiquement proches
+📝 ACTIONS PRIORITAIRES
+• Ajouter des liens vers les pages orphelines listées

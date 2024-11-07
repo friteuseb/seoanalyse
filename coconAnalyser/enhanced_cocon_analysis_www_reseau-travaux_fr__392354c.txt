@@ -1,0 +1,126 @@
+
+==================================================
+📊 RAPPORT D'ANALYSE DU COCON SÉMANTIQUE
+==================================================
+
+🔍 MÉTRIQUES CLÉS
+
+        - Pages totales : 37
+        - Profondeur moyenne : 1.0 clics
+        - Profondeur max : 2 clics
+        - Liens internes : 1354
+        - Moyenne liens/page : 36.6
+        
+
+📈 CLUSTERS THÉMATIQUES
+
+        Cluster 1 - bois traitement latte terrasse verre ✅ Excellent
+        - Pages : 6
+        - Cohésion : 6.00
+        - Liens internes/externes : 36/181
+        - PageRank moyen : 0.0265
+
+        Cluster 4 - amiens travaux maisons terrassement carrelage ✅ Excellent
+        - Pages : 8
+        - Cohésion : 8.00
+        - Liens internes/externes : 64/231
+        - PageRank moyen : 0.0265
+
+        Cluster 0 - mortier béton fondations bois construction ✅ Excellent
+        - Pages : 7
+        - Cohésion : 7.00
+        - Liens internes/externes : 49/206
+        - PageRank moyen : 0.0265
+
+        Cluster 3 - travaux réseau site loyauté courtier ✅ Excellent
+        - Pages : 9
+        - Cohésion : 7.33
+        - Liens internes/externes : 66/262
+        - PageRank moyen : 0.0231
+
+        Cluster 2 - travaux portes amiens construction couverture ✅ Excellent
+        - Pages : 7
+        - Cohésion : 5.00
+        - Liens internes/externes : 35/224
+        - PageRank moyen : 0.0205
+
+⭐ PAGES STRATÉGIQUES
+
+        https://www.reseau-travaux.fr/changer-une-latte-de-terrasse
+        - Rôle : Page d'accueil
+        - PageRank : 0.0265
+        - Liens entrants uniques : 37 sources uniques
+        - Liens sortants uniques : 36 destinations uniques
+        - Ratio entrée/sortie : 1.03
+
+        https://www.reseau-travaux.fr/platrerie-isolation
+        - Rôle : Cluster 4
+        - PageRank : 0.0265
+        - Liens entrants uniques : 37 sources uniques
+        - Liens sortants uniques : 37 destinations uniques
+        - Ratio entrée/sortie : 1.00
+
+        https://www.reseau-travaux.fr/choisir-le-bon-mortier
+        - Rôle : Cluster 0
+        - PageRank : 0.0265
+        - Liens entrants uniques : 37 sources uniques
+        - Liens sortants uniques : 37 destinations uniques
+        - Ratio entrée/sortie : 1.00
+
+⚠️  ALERTES
+⚠️  3 pages orphelines
+
+Pages orphelines prioritaires:
+• https://www.reseau-travaux.fr/home
+• https://www.reseau-travaux.fr/mentionslegales
+• https://www.reseau-travaux.fr/bonaparte-haut-de-france-postuler
+
+🎯 SCORE GLOBAL : 82.65/100
+Diagnostic : Bon cocon avec optimisations possibles
+
+📝 ACTIONS PRIORITAIRES
+• Ajouter des liens vers les pages orphelines listées
+
+🔄 FLUX THÉMATIQUE
+
+🎯 COHÉRENCE SÉMANTIQUE
+
+        Cluster 1:
+        - Score de cohérence: 0.17
+        - Termes communs: latte, traitement, bois, terrasse, verre
+        - Densité de liens internes: 6.0
+        - Liens internes: 36
+        - Liens externes: 181
+        - Taille du cluster: 6
+
+        Cluster 4:
+        - Score de cohérence: 0.22
+        - Termes communs: maisons, travaux, terrassement, amiens, carrelage
+        - Densité de liens internes: 8.0
+        - Liens internes: 64
+        - Liens externes: 231
+        - Taille du cluster: 8
+
+        Cluster 0:
+        - Score de cohérence: 0.19
+        - Termes communs: béton, construction, bois, mortier, fondations
+        - Densité de liens internes: 7.0
+        - Liens internes: 49
+        - Liens externes: 206
+        - Taille du cluster: 7
+
+        Cluster 3:
+        - Score de cohérence: 0.2
+        - Termes communs: site, loyauté, réseau, courtier, travaux
+        - Densité de liens internes: 7.33
+        - Liens internes: 66
+        - Liens externes: 262
+        - Taille du cluster: 9
+
+        Cluster 2:
+        - Score de cohérence: 0.14
+        - Termes communs: construction, travaux, couverture, portes, amiens
+        - Densité de liens internes: 5.0
+        - Liens internes: 35
+        - Liens externes: 224
+        - Taille du cluster: 7

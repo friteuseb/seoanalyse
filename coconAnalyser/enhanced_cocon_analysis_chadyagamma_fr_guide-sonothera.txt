@@ -78,7 +78,7 @@ Diagnostic : Excellent cocon sémantique
 
         Cluster 3:
         - Score de cohérence: 0.44
-        - Termes communs: domicile, sonothérapie, vibrations, être, cette
+        - Termes communs: être, sonothérapie, domicile, vibrations, cette
         - Densité de liens internes: 2.95
         - Liens internes: 59
         - Liens externes: 76
@@ -94,7 +94,7 @@ Diagnostic : Excellent cocon sémantique
 
         Cluster 1:
         - Score de cohérence: 0.6
-        - Termes communs: voyages, sonore, voyage, sonores, être
+        - Termes communs: être, sonore, sonores, voyages, voyage
         - Densité de liens internes: 4.55
         - Liens internes: 50
         - Liens externes: 33
@@ -102,7 +102,7 @@ Diagnostic : Excellent cocon sémantique
 
         Cluster 2:
         - Score de cohérence: 0.15
-        - Termes communs: bols, sons, sonothérapie, être, vibrations
+        - Termes communs: être, sonothérapie, sons, bols, vibrations
         - Densité de liens internes: 1.0
         - Liens internes: 8
         - Liens externes: 45

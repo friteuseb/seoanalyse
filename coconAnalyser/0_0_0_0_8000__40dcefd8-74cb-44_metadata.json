@@ -1,0 +1,612 @@
+{
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:39": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_history.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_history.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_and_artificial_intelligence.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_chess_and_artificial_intelligence.html"
+    ],
+    "links_count": "4",
+    "content_length": "12936",
+    "label": "the intelligence of artificial history",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_and_artificial_intelligence.html",
+    "crawl_date": "2024-11-09T18:12:41.414080",
+    "cluster": "3"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:35": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_history.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_history.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_psychology.html"
+    ],
+    "links_count": "5",
+    "content_length": "11324",
+    "label": "chess the of variants strategy",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_psychology.html",
+    "crawl_date": "2024-11-09T18:12:42.426017",
+    "cluster": "4"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:14": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_chess_endgames_for_beginners.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_les_bases_des_finales_aux_echecs.html"
+    ],
+    "links_count": "2",
+    "content_length": "15910",
+    "label": "endgame the échecs finales partie",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_decouvrir_les_finales_dechecs.html",
+    "crawl_date": "2024-11-09T18:12:43.439084",
+    "cluster": "2"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:30": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_tennis_training_and_fitness.html"
+    ],
+    "links_count": "1",
+    "content_length": "6989",
+    "label": "muscle and the tennis of",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_tennis_training_and_fitness.html",
+    "crawl_date": "2024-11-09T18:12:44.449156",
+    "cluster": "0"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:8": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_all_about_chess_variants.html"
+    ],
+    "links_count": "1",
+    "content_length": "14297",
+    "label": "chess the of variants strategy",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_all_about_chess_variants.html",
+    "crawl_date": "2024-11-09T18:12:45.462209",
+    "cluster": "4"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:25": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_and_artificial_intelligence.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_history.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_and_artificial_intelligence.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_psychology.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_psychology.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_chess_and_artificial_intelligence.html"
+    ],
+    "links_count": "8",
+    "content_length": "13821",
+    "label": "chess the of variants strategy",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_history.html",
+    "crawl_date": "2024-11-09T18:12:46.476590",
+    "cluster": "4"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:20": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_equipment.html"
+    ],
+    "links_count": "1",
+    "content_length": "7237",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_equipment.html",
+    "crawl_date": "2024-11-09T18:12:47.489190",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:31": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_history.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_and_artificial_intelligence.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_history.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_and_artificial_intelligence.html"
+    ],
+    "links_count": "4",
+    "content_length": "10658",
+    "label": "the intelligence of artificial history",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_chess_and_artificial_intelligence.html",
+    "crawl_date": "2024-11-09T18:12:48.499874",
+    "cluster": "3"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:16": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_tennis_for_beginners.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html"
+    ],
+    "links_count": "3",
+    "content_length": "11415",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_tennis_for_beginners.html",
+    "crawl_date": "2024-11-09T18:12:49.511693",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:3": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_all_about_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_all_about_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html"
+    ],
+    "links_count": "6",
+    "content_length": "12100",
+    "label": "chess the of variants strategy",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_chess_strategy.html",
+    "crawl_date": "2024-11-09T18:12:50.524343",
+    "cluster": "4"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:1": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_tennis_tournaments_and_rankings.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_tennis_tournaments_and_rankings.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_tennis_tournaments_and_rankings_myths_and_realities.html"
+    ],
+    "links_count": "3",
+    "content_length": "11158",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_tennis_tournaments_and_rankings_myths_and_realities.html",
+    "crawl_date": "2024-11-09T18:12:51.537186",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:22": {
+    "content": "content truncated...",
+    "internal_links_out": [],
+    "links_count": "0",
+    "content_length": "7880",
+    "label": "the intelligence of artificial history",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_chess_and_artificial_intelligence.html",
+    "crawl_date": "2024-11-09T18:12:52.547948",
+    "cluster": "3"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:2": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_all_about_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_all_about_chess_strategy.html"
+    ],
+    "links_count": "9",
+    "content_length": "20936",
+    "label": "endgame the échecs finales partie",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html",
+    "crawl_date": "2024-11-09T18:12:53.565160",
+    "cluster": "2"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:28": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_all_about_chess_variants.html"
+    ],
+    "links_count": "1",
+    "content_length": "7725",
+    "label": "chess the of variants strategy",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_all_about_chess_variants.html",
+    "crawl_date": "2024-11-09T18:12:54.573640",
+    "cluster": "4"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:10": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_tennis_history_and_legends.html"
+    ],
+    "links_count": "1",
+    "content_length": "10329",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_tennis_history_and_legends.html",
+    "crawl_date": "2024-11-09T18:12:55.583422",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:23": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_les_bases_des_finales_aux_echecs.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_decouvrir_les_finales_dechecs.html"
+    ],
+    "links_count": "2",
+    "content_length": "13585",
+    "label": "endgame the échecs finales partie",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_chess_endgames_for_beginners.html",
+    "crawl_date": "2024-11-09T18:12:56.595508",
+    "cluster": "2"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:21": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_tennis_history_and_legends.html"
+    ],
+    "links_count": "1",
+    "content_length": "8162",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_tennis_history_and_legends.html",
+    "crawl_date": "2024-11-09T18:12:57.605275",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:19": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_all_about_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_all_about_chess_strategy.html"
+    ],
+    "links_count": "9",
+    "content_length": "20936",
+    "label": "endgame the échecs finales partie",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+    "crawl_date": "2024-11-09T18:12:58.624379",
+    "cluster": "2"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:34": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_history.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_and_artificial_intelligence.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_history.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_chess_and_artificial_intelligence.html"
+    ],
+    "links_count": "4",
+    "content_length": "12937",
+    "label": "the intelligence of artificial history",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_and_artificial_intelligence.html",
+    "crawl_date": "2024-11-09T18:12:59.636882",
+    "cluster": "3"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:15": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_chess_endgames_for_beginners.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_decouvrir_les_finales_dechecs.html"
+    ],
+    "links_count": "2",
+    "content_length": "15873",
+    "label": "endgame the échecs finales partie",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_les_bases_des_finales_aux_echecs.html",
+    "crawl_date": "2024-11-09T18:13:00.650195",
+    "cluster": "2"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:7": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html"
+    ],
+    "links_count": "8",
+    "content_length": "13664",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+    "crawl_date": "2024-11-09T18:13:01.663343",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:4": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_tennis_training_and_fitness.html"
+    ],
+    "links_count": "1",
+    "content_length": "6992",
+    "label": "muscle and the tennis of",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_tennis_training_and_fitness.html",
+    "crawl_date": "2024-11-09T18:13:02.672985",
+    "cluster": "0"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:9": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_all_about_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html"
+    ],
+    "links_count": "6",
+    "content_length": "12100",
+    "label": "chess the of variants strategy",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_all_about_chess_strategy.html",
+    "crawl_date": "2024-11-09T18:13:03.684813",
+    "cluster": "4"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:6": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_tennis_tournaments_and_rankings.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_tennis_tournaments_and_rankings_myths_and_realities.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_tennis_tournaments_and_rankings_myths_and_realities.html"
+    ],
+    "links_count": "3",
+    "content_length": "11450",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_tennis_tournaments_and_rankings.html",
+    "crawl_date": "2024-11-09T18:13:04.696506",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:18": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_injuries_and_prevention.html"
+    ],
+    "links_count": "1",
+    "content_length": "6914",
+    "label": "muscle and the tennis of",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_injuries_and_prevention.html",
+    "crawl_date": "2024-11-09T18:13:05.705129",
+    "cluster": "0"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:32": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_all_about_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_all_about_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html"
+    ],
+    "links_count": "6",
+    "content_length": "18623",
+    "label": "chess the of variants strategy",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_chess_strategy.html",
+    "crawl_date": "2024-11-09T18:13:06.719784",
+    "cluster": "4"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:24": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_psychology.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_psychology.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html"
+    ],
+    "links_count": "9",
+    "content_length": "21566",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+    "crawl_date": "2024-11-09T18:13:07.739841",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:33": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_and_artificial_intelligence.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_history.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_and_artificial_intelligence.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_psychology.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_psychology.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_chess_and_artificial_intelligence.html"
+    ],
+    "links_count": "8",
+    "content_length": "20344",
+    "label": "chess the of variants strategy",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_history.html",
+    "crawl_date": "2024-11-09T18:13:08.757664",
+    "cluster": "4"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:36": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_tennis_tournaments_and_rankings.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_tennis_tournaments_and_rankings.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_tennis_tournaments_and_rankings_myths_and_realities.html"
+    ],
+    "links_count": "3",
+    "content_length": "8887",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_tennis_tournaments_and_rankings_myths_and_realities.html",
+    "crawl_date": "2024-11-09T18:13:09.768803",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:37": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html"
+    ],
+    "links_count": "8",
+    "content_length": "13664",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_tennis_rules_and_scoring.html",
+    "crawl_date": "2024-11-09T18:13:10.782279",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:29": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_all_about_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_all_about_chess_strategy.html"
+    ],
+    "links_count": "9",
+    "content_length": "20971",
+    "label": "endgame the échecs finales partie",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+    "crawl_date": "2024-11-09T18:13:11.799063",
+    "cluster": "2"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:40": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_psychology.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_psychology.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html"
+    ],
+    "links_count": "9",
+    "content_length": "14868",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+    "crawl_date": "2024-11-09T18:13:12.813060",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:5": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html"
+    ],
+    "links_count": "8",
+    "content_length": "18086",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_tennis_rules_and_scoring.html",
+    "crawl_date": "2024-11-09T18:13:13.831042",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:13": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_tennis_tournaments_and_rankings_myths_and_realities.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_tennis_tournaments_and_rankings.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_tennis_tournaments_and_rankings_myths_and_realities.html"
+    ],
+    "links_count": "3",
+    "content_length": "8886",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_tennis_tournaments_and_rankings.html",
+    "crawl_date": "2024-11-09T18:13:14.842301",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:11": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_all_about_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_chess_strategy.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html"
+    ],
+    "links_count": "6",
+    "content_length": "18623",
+    "label": "chess the of variants strategy",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_all_about_chess_strategy.html",
+    "crawl_date": "2024-11-09T18:13:15.880311",
+    "cluster": "4"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:38": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_exploring_tennis_for_beginners.html"
+    ],
+    "links_count": "1",
+    "content_length": "7629",
+    "label": "muscle and the tennis of",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_exploring_tennis_for_beginners.html",
+    "crawl_date": "2024-11-09T18:13:16.890632",
+    "cluster": "0"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:17": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_injuries_and_prevention.html"
+    ],
+    "links_count": "1",
+    "content_length": "6911",
+    "label": "muscle and the tennis of",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_injuries_and_prevention.html",
+    "crawl_date": "2024-11-09T18:13:17.900444",
+    "cluster": "0"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:12": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_basics_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_basics_of_chess_endgames.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_chess_endgames_for_beginners.html"
+    ],
+    "links_count": "8",
+    "content_length": "18079",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_secrets_of_tennis_rules_and_scoring.html",
+    "crawl_date": "2024-11-09T18:13:18.916167",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:27": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_equipment.html"
+    ],
+    "links_count": "1",
+    "content_length": "7240",
+    "label": "the tennis rankings of and",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_equipment.html",
+    "crawl_date": "2024-11-09T18:13:19.925944",
+    "cluster": "1"
+  },
+  "0_0_0_0:8000__40dcefd8-74cb-4433-8f3f-988f234177d2:doc:26": {
+    "content": "content truncated...",
+    "internal_links_out": [
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_history.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_discover_tennis_techniques.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_history.html",
+      "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_fr_our_articles_the_essentials_of_chess_psychology.html"
+    ],
+    "links_count": "5",
+    "content_length": "17826",
+    "label": "chess the of variants strategy",
+    "url": "http://0.0.0.0:8000/semantic_suggestion.ecotechlab.fr_our_articles_the_essentials_of_chess_psychology.html",
+    "crawl_date": "2024-11-09T18:13:20.944502",
+    "cluster": "4"
+  }
+}

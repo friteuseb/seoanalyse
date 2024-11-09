@@ -24,3 +24,5 @@ redis==5.0.5
 
 # Utilities
 termcolor==2.2.0
+tabulate
+

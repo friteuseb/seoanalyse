@@ -140,10 +140,9 @@ class CrawlComparisonCLI:
             crawl_id1, crawl_id2 = self.get_crawl_selection()
             
             print(f"\nAnalyse comparative en cours...")
-            print(f"Crawl 1: {crawl_id1}")
-            print(f"Crawl 2: {crawl_id2}\n")
+            print(f"Crawl 1 (AVANT): {crawl_id1}")
+            print(f"Crawl 2 (APRÈS): {crawl_id2}\n")
             
-            # Initialiser les analyseurs avec gestion d'erreur
             try:
                 analyzer1 = EnhancedCoconAnalyzer(self.redis, crawl_id1)
                 metrics1 = analyzer1.calculate_scientific_metrics()
@@ -158,9 +157,9 @@ class CrawlComparisonCLI:
                 print(f"Erreur lors de l'analyse du second crawl: {str(e)}")
                 return
             
-            # Générer le rapport
+            # Génération du rapport dans le bon ordre
             try:
-                report = analyzer1.generate_scientific_report(metrics1, metrics2)
+                report = analyzer1.generate_scientific_report(metrics1, metrics2)  # Ordre normal
                 
                 # Afficher le rapport
                 print("\n" + "="*50)

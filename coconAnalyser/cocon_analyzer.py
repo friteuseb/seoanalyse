@@ -33,52 +33,66 @@ class CoconAnalyzer:
 
     def load_data(self):
         """Charge et parse les données depuis Redis"""
-        pattern = f"{self.crawl_id}:doc:*"
-
+        try:
+            pattern = f"{self.crawl_id}:doc:*"
         
-        # Premier passage : charger toutes les données
-        for key in self.redis.scan_iter(pattern):
-            doc_data = self.redis.hgetall(key)
-            if not doc_data:
-                continue
+            # Premier passage : charger toutes les données
+            for key in self.redis.scan_iter(pattern):
+                try:
+                    doc_data = self.redis.hgetall(key)
+                    if not doc_data:
+                        continue
 
-            url = doc_data[b'url'].decode('utf-8').rstrip('/')
-            internal_links = json.loads(doc_data.get(b'internal_links_out', b'[]').decode('utf-8'))
-            
-            cluster = int(doc_data.get(b'cluster', b'0').decode('utf-8'))
-            label = doc_data.get(b'label', b'').decode('utf-8')
-            links_count = int(doc_data.get(b'links_count', b'0').decode('utf-8'))
-            content_length = int(doc_data.get(b'content_length', b'0').decode('utf-8'))
+                    url = doc_data[b'url'].decode('utf-8').rstrip('/')
+                    internal_links = json.loads(doc_data.get(b'internal_links_out', b'[]').decode('utf-8'))
+                    
+                    cluster = int(doc_data.get(b'cluster', b'0').decode('utf-8'))
+                    label = doc_data.get(b'label', b'').decode('utf-8')
+                    links_count = int(doc_data.get(b'links_count', b'0').decode('utf-8'))
+                    content_length = int(doc_data.get(b'content_length', b'0').decode('utf-8'))
 
-            # Ajouter le nœud au graphe
-            self.graph.add_node(url)
+                    # Ajouter le nœud au graphe
+                    self.graph.add_node(url)
 
-            # Ajouter les liens au graphe
-            clean_links = [link.rstrip('/') for link in internal_links]
-            for target in clean_links:
-                self.graph.add_edge(url, target)
+                    # Ajouter les liens au graphe
+                    clean_links = [link.rstrip('/') for link in internal_links]
+                    for target in clean_links:
+                        self.graph.add_edge(url, target)
 
-            # Stocker les métriques
-            self.pages[url] = PageMetrics(
-                url=url,
-                depth=-1,
-                cluster=cluster,
-                label=label,
-                incoming_links=0,  # Sera calculé plus tard
-                outgoing_links=links_count,
-                internal_pagerank=0.0,
-                semantic_relevance=0.0,
-                content_length=content_length
-            )
+                    # Stocker les métriques
+                    self.pages[url] = PageMetrics(
+                        url=url,
+                        depth=-1,
+                        cluster=cluster,
+                        label=label,
+                        incoming_links=0,  # Sera calculé plus tard
+                        outgoing_links=links_count,
+                        internal_pagerank=0.0,
+                        semantic_relevance=0.0,
+                        content_length=content_length
+                    )
 
-            # Grouper par cluster
-            self.clusters[cluster].append(url)
+                    # Grouper par cluster
+                    self.clusters[cluster].append(url)
 
-            # Identifier la racine (page avec le plus de liens sortants)
-            if not self.root_url or links_count > self.pages.get(self.root_url, PageMetrics(url='', depth=0, cluster=0, label='', incoming_links=0, outgoing_links=0, internal_pagerank=0.0, semantic_relevance=0.0, content_length=0)).outgoing_links:
-                self.root_url = url
+                except Exception as e:
+                    logging.error(f"Erreur lors du traitement de la clé {key}: {str(e)}")
+                    continue
+
+            # Identifier la racine
+            max_outgoing = -1
+            for url, metrics in self.pages.items():
+                outgoing_count = len([edge for edge in self.graph.edges() if edge[0] == url])
+                if outgoing_count > max_outgoing:
+                    max_outgoing = outgoing_count
+                    self.root_url = url
+
             self._update_metrics()
 
+        except Exception as e:
+            logging.error(f"Erreur lors du chargement des données : {str(e)}")
+            raise
+        
     def _update_metrics(self):
         # Identifie la racine comme étant la page avec le plus de liens sortants
         max_links = 0

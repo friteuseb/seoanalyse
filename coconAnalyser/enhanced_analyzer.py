@@ -12,36 +12,35 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
         self.load_data()
 
     def format_change(self, before, after, inverse=False):
-        """Format les changements de manière lisible"""
-        if before == 0:
-            return f"{after:.2f} (nouveau)"
-        
-        change = ((after - before) / before) * 100
-        if inverse:
-            change = -change
-        
-        # Plafonnement des pourcentages extrêmes
-        if abs(change) > 1000:
-            if change > 0:
-                return f"{after:.2f} (↑ >1000%)"
+        """Format les changements de manière lisible avec gestion d'erreur"""
+        try:
+            before = float(before)
+            after = float(after)
+            
+            if before == 0:
+                return f"{after:.2f} (nouveau)"
+            
+            # Calcul correct du pourcentage de changement
+            change = ((after - before) / before) * 100
+            if inverse:
+                change = -change  # Inverse le signe uniquement si demandé
+            
+            # Détermination de l'indicateur
+            if abs(change) < 30:
+                indicator = "→"
             else:
-                return f"{after:.2f} (↓ >1000%)"
-        
-        # Catégorisation des changements
-        if change > 0:
-            if change > 100:
-                indicator = "↑↑"  # Amélioration majeure
-            elif change > 30:
-                indicator = "↑"   # Amélioration significative
-            else:
-                indicator = "→"   # Amélioration modérée
-        else:
-            if change < -30:
-                indicator = "↓"   # Dégradation significative
-            else:
-                indicator = "→"   # Changement modéré
-        
-        return f"{after:.2f} ({indicator} {change:+.1f}%)"
+                indicator = "↑" if change > 0 else "↓"
+                if abs(change) > 100:
+                    indicator = indicator * 2  # ↑↑ ou ↓↓
+            
+            # Si le changement est trop grand
+            if abs(change) > 1000:
+                return f"{after:.2f} ({indicator} >1000%)"
+                
+            return f"{after:.2f} ({indicator} {change:+.1f}%)"
+            
+        except Exception as e:
+            return f"{after:.2f} (non comparable)"
 
 
     def calculate_scientific_metrics(self):
@@ -171,26 +170,63 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
                 'language_balance': 0,
                 'thematic_isolation': 0
             }
-
+        
     def _calculate_accessibility_metrics(self):
-        """Calcul des métriques d'accessibilité"""
+        """Calcul des métriques d'accessibilité avec gestion d'erreur robuste"""
+        metrics = {}
+        
         try:
-            depths = [self.pages[node].depth for node in self.graph.nodes()]
-            pageranks = [self.pages[node].internal_pagerank for node in self.graph.nodes()]
-            
-            metrics = {
-                'mean_depth': float(np.mean(depths)),
-                'depth_variance': float(np.var(depths)),
-                'max_depth': float(max(depths)),
-                'min_depth': float(min(depths)),
-                'pagerank_entropy': float(self._calculate_entropy(pageranks)),
-                'pages_within_3_clicks': sum(1 for d in depths if d <= 3) / len(depths)
-            }
-            
+            # Trouver la page avec le plus de liens sortants comme racine
+            if not self.root_url:
+                out_degrees = self.graph.out_degree()
+                if out_degrees:
+                    self.root_url = max(out_degrees, key=lambda x: x[1])[0]
+                else:
+                    self.root_url = next(iter(self.graph.nodes()))
+
+            # Calcul des plus courts chemins depuis la racine
+            depths = []
+            for node in self.graph.nodes():
+                try:
+                    if nx.has_path(self.graph, self.root_url, node):
+                        depth = nx.shortest_path_length(self.graph, self.root_url, node)
+                        depths.append(depth)
+                except:
+                    depths.append(0)  # Page inaccessible
+
+            if depths:
+                metrics['mean_depth'] = float(np.mean(depths))
+                metrics['depth_variance'] = float(np.var(depths))
+                metrics['max_depth'] = float(max(depths))
+                metrics['pages_within_3_clicks'] = float(sum(1 for d in depths if d <= 3) / len(depths))
+            else:
+                logging.warning("Aucune profondeur n'a pu être calculée")
+                metrics['mean_depth'] = 1.0
+                metrics['depth_variance'] = 0.0
+                metrics['max_depth'] = 1.0
+                metrics['pages_within_3_clicks'] = 1.0
+
+            # Calcul du PageRank
+            try:
+                pagerank = nx.pagerank(self.graph)
+                if pagerank:
+                    metrics['pagerank_entropy'] = float(self._calculate_entropy(list(pagerank.values())))
+                else:
+                    metrics['pagerank_entropy'] = 0.0
+            except:
+                metrics['pagerank_entropy'] = 0.0
+                
             return metrics
+
         except Exception as e:
-            print(f"Erreur lors du calcul des métriques d'accessibilité: {str(e)}")
-            return {}
+            logging.error(f"Erreur lors du calcul des métriques d'accessibilité : {str(e)}")
+            return {
+                'mean_depth': 1.0,
+                'depth_variance': 0.0,
+                'max_depth': 1.0,
+                'pages_within_3_clicks': 1.0,
+                'pagerank_entropy': 0.0
+            }
 
     def _calculate_cluster_metrics(self):
         """Calcul des métriques de cluster"""
@@ -264,39 +300,33 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
 
 
     def generate_scientific_report(self, metrics1, metrics2):
-        """Génère un rapport scientifique comparatif détaillé avec débogage"""
+        """Génère un rapport scientifique comparatif détaillé avec gestion d'erreur robuste"""
         try:
             report = []
             report.append("\n=== ANALYSE COMPARATIVE DU MAILLAGE INTERNE ===\n")
-            
-            # Affichage des métriques disponibles pour le débogage
-            print("\nMétriques disponibles dans metrics1:")
-            for category, metrics in metrics1.items():
-                print(f"\n{category}:")
-                for key, value in metrics.items():
-                    print(f"  {key}: {value}")
 
-            print("\nMétriques disponibles dans metrics2:")
-            for category, metrics in metrics2.items():
-                print(f"\n{category}:")
-                for key, value in metrics.items():
-                    print(f"  {key}: {value}")
+            # Fonction helper pour accéder aux métriques de manière sécurisée
+            def get_metric(metrics, category, key, default=0.0):
+                try:
+                    return float(metrics.get(category, {}).get(key, default))
+                except (TypeError, ValueError):
+                    return default
 
             # Résumé comparatif
             report.append("📊 ÉVOLUTION GLOBALE")
             report.append("AVANT :")
-            report.append(f"• {metrics1['structural_metrics']['number_of_nodes']} pages")
-            report.append(f"• {metrics1['structural_metrics']['number_of_edges']} liens internes")
-            report.append(f"• {metrics1['structural_metrics']['density']:.3f} densité moyenne")
-            report.append(f"• {metrics1['cluster_metrics']['number_of_clusters']} clusters")
-            report.append(f"• {metrics1['structural_metrics'].get('bilingual_links', 0)} liens bilingues")
+            report.append(f"• {get_metric(metrics1, 'structural_metrics', 'number_of_nodes', 0):.0f} pages")
+            report.append(f"• {get_metric(metrics1, 'structural_metrics', 'number_of_edges', 0):.0f} liens internes")
+            report.append(f"• {get_metric(metrics1, 'structural_metrics', 'density', 0):.3f} densité moyenne")
+            report.append(f"• {get_metric(metrics1, 'cluster_metrics', 'number_of_clusters', 0):.0f} clusters")
+            report.append(f"• {get_metric(metrics1, 'structural_metrics', 'bilingual_links', 0):.0f} liens bilingues")
             
             report.append("\nAPRÈS :")
-            report.append(f"• {metrics2['structural_metrics']['number_of_nodes']} pages")
-            report.append(f"• {metrics2['structural_metrics']['number_of_edges']} liens internes")
-            report.append(f"• {metrics2['structural_metrics']['density']:.3f} densité moyenne")
-            report.append(f"• {metrics2['cluster_metrics']['number_of_clusters']} clusters")
-            report.append(f"• {metrics2['structural_metrics'].get('bilingual_links', 0)} liens bilingues")
+            report.append(f"• {get_metric(metrics2, 'structural_metrics', 'number_of_nodes', 0):.0f} pages")
+            report.append(f"• {get_metric(metrics2, 'structural_metrics', 'number_of_edges', 0):.0f} liens internes")
+            report.append(f"• {get_metric(metrics2, 'structural_metrics', 'density', 0):.3f} densité moyenne")
+            report.append(f"• {get_metric(metrics2, 'cluster_metrics', 'number_of_clusters', 0):.0f} clusters")
+            report.append(f"• {get_metric(metrics2, 'structural_metrics', 'bilingual_links', 0):.0f} liens bilingues")
 
             # Qualité du maillage
             report.append("\n🔗 QUALITÉ DU MAILLAGE")
@@ -307,19 +337,12 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
                 ('Liens thématiques', 'thematic_links', 'structural_metrics', 'Liens entre pages de même thème'),
                 ('Liens inter-thèmes', 'cross_thematic_links', 'structural_metrics', 'Liens entre thèmes différents')
             ]
-            
+
             for name, key, category, description in maillage_metrics:
-                try:
-                    before = float(metrics1[category].get(key, 0))
-                    after = float(metrics2[category].get(key, 0))
-                    print(f"\nDébug {name}: before={before}, after={after}")  # Debug
-                    report.append(f"• {name}: {self.format_change(before, after)}")
-                    report.append(f"  ℹ️  {description}")
-                except Exception as e:
-                    print(f"\nErreur détaillée pour {name} ({category}.{key}):")
-                    print(f"metrics1: {metrics1[category].get(key, 'Non trouvé')}")
-                    print(f"metrics2: {metrics2[category].get(key, 'Non trouvé')}")
-                    print(f"Exception: {str(e)}")
+                before = get_metric(metrics1, category, key)
+                after = get_metric(metrics2, category, key)
+                report.append(f"• {name}: {self.format_change(before, after)}")
+                report.append(f"  ℹ️  {description}")
 
             # Accessibilité
             report.append("\n🎯 ACCESSIBILITÉ DU CONTENU")
@@ -329,19 +352,12 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
                 ('Distribution PageRank', 'pagerank_entropy', 'accessibility_metrics', 'Équilibre de l\'autorité des pages'),
                 ('Profondeur maximale', 'max_depth', 'accessibility_metrics', 'Nombre maximal de clics nécessaires')
             ]
-            
+
             for name, key, category, description in accessibility_metrics:
-                try:
-                    before = float(metrics1[category].get(key, 0))
-                    after = float(metrics2[category].get(key, 0))
-                    print(f"\nDébug {name}: before={before}, after={after}")  # Debug
-                    report.append(f"• {name}: {self.format_change(before, after)}")
-                    report.append(f"  ℹ️  {description}")
-                except Exception as e:
-                    print(f"\nErreur détaillée pour {name} ({category}.{key}):")
-                    print(f"metrics1: {metrics1[category].get(key, 'Non trouvé')}")
-                    print(f"metrics2: {metrics2[category].get(key, 'Non trouvé')}")
-                    print(f"Exception: {str(e)}")
+                before = get_metric(metrics1, category, key)
+                after = get_metric(metrics2, category, key)
+                report.append(f"• {name}: {self.format_change(before, after)}")
+                report.append(f"  ℹ️  {description}")
 
             # Structure des clusters
             report.append("\n📚 STRUCTURE DES CLUSTERS")
@@ -351,31 +367,31 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
                 ('Densité interne', 'cluster_density', 'cluster_metrics', 'Cohésion au sein des thématiques'),
                 ('Liens inter-clusters', 'inter_cluster_links', 'cluster_metrics', 'Connexions entre thématiques')
             ]
-            
-            for name, key, category, description in cluster_metrics:
-                try:
-                    before = float(metrics1[category].get(key, 0))
-                    after = float(metrics2[category].get(key, 0))
-                    print(f"\nDébug {name}: before={before}, after={after}")  # Debug
-                    report.append(f"• {name}: {self.format_change(before, after)}")
-                    report.append(f"  ℹ️  {description}")
-                except Exception as e:
-                    print(f"\nErreur détaillée pour {name} ({category}.{key}):")
-                    print(f"metrics1: {metrics1[category].get(key, 'Non trouvé')}")
-                    print(f"metrics2: {metrics2[category].get(key, 'Non trouvé')}")
-                    print(f"Exception: {str(e)}")
 
-        # Synthèse
+            for name, key, category, description in cluster_metrics:
+                before = get_metric(metrics1, category, key)
+                after = get_metric(metrics2, category, key)
+                report.append(f"• {name}: {self.format_change(before, after)}")
+                report.append(f"  ℹ️  {description}")
+
+            # Synthèse et recommandations
             report.append("\n📋 SYNTHÈSE ET RECOMMANDATIONS")
             improvements = []
             
-            # Calculer les améliorations significatives
-            if metrics2['structural_metrics']['density'] > metrics1['structural_metrics']['density']:
-                improvements.append(f"Densité du maillage améliorée de {((metrics2['structural_metrics']['density'] / metrics1['structural_metrics']['density']) - 1) * 100:.1f}%")
-            if metrics2['structural_metrics']['thematic_links'] > metrics1['structural_metrics'].get('thematic_links', 0):
-                improvements.append(f"Liens thématiques multipliés par {metrics2['structural_metrics']['thematic_links'] / max(1, metrics1['structural_metrics'].get('thematic_links', 1)):.1f}")
-            if metrics2['structural_metrics']['average_clustering'] > metrics1['structural_metrics']['average_clustering']:
-                improvements.append(f"Cohésion des groupes améliorée de {((metrics2['structural_metrics']['average_clustering'] / metrics1['structural_metrics']['average_clustering']) - 1) * 100:.1f}%")
+            # Analyse des améliorations
+            density_change = (get_metric(metrics2, 'structural_metrics', 'density') / 
+                            max(0.001, get_metric(metrics1, 'structural_metrics', 'density')) - 1) * 100
+            thematic_links_change = (get_metric(metrics2, 'structural_metrics', 'thematic_links') / 
+                                    max(1, get_metric(metrics1, 'structural_metrics', 'thematic_links')))
+            clustering_change = (get_metric(metrics2, 'structural_metrics', 'average_clustering') / 
+                            max(0.001, get_metric(metrics1, 'structural_metrics', 'average_clustering')) - 1) * 100
+
+            if density_change > 0:
+                improvements.append(f"Densité du maillage améliorée de {density_change:.1f}%")
+            if thematic_links_change > 1:
+                improvements.append(f"Liens thématiques multipliés par {thematic_links_change:.1f}")
+            if clustering_change > 0:
+                improvements.append(f"Cohésion des groupes améliorée de {clustering_change:.1f}%")
 
             # Points forts
             if improvements:
@@ -383,63 +399,66 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
                 for imp in improvements:
                     report.append(f"• {imp}")
 
-            # Points d'attention et recommandations
+            # Recommandations
             recommendations = []
             
             # Accessibilité
-            if metrics2['accessibility_metrics']['pages_within_3_clicks'] < metrics1['accessibility_metrics']['pages_within_3_clicks']:
+            if get_metric(metrics2, 'accessibility_metrics', 'pages_within_3_clicks') < get_metric(metrics1, 'accessibility_metrics', 'pages_within_3_clicks'):
                 recommendations.append("Améliorer l'accessibilité en ajoutant des raccourcis depuis la page d'accueil")
             
             # Densité
-            if metrics2['structural_metrics']['density'] < 0.15:
+            if get_metric(metrics2, 'structural_metrics', 'density') < 0.15:
                 recommendations.append("Augmenter les liens contextuels entre pages thématiquement proches")
             
             # Cohésion des clusters
-            if metrics2['cluster_metrics']['cluster_density'] < 0.3:
+            if get_metric(metrics2, 'cluster_metrics', 'cluster_density') < 0.3:
                 recommendations.append("Renforcer les liens entre pages d'un même thème")
+            
+            # Équilibre des clusters
+            cluster_variance = get_metric(metrics2, 'cluster_metrics', 'cluster_size_variance')
+            if cluster_variance > 5:
+                recommendations.append("Équilibrer la taille des clusters thématiques")
+                
+            # Liens inter-clusters
+            if get_metric(metrics2, 'structural_metrics', 'cross_thematic_links') < get_metric(metrics1, 'structural_metrics', 'cross_thematic_links') * 0.7:
+                recommendations.append("Rétablir des liens stratégiques entre les différentes thématiques")
+
+            # Réciprocité
+            if get_metric(metrics2, 'structural_metrics', 'reciprocity') < 0.8:
+                recommendations.append("Augmenter la réciprocité des liens entre les pages")
 
             if recommendations:
-                report.append("\n💡 Recommandations :")
+                report.append("\n💡 Recommandations prioritaires :")
                 for rec in recommendations:
                     report.append(f"• {rec}")
 
+            # Score global
+            try:
+                score = self._calculate_global_score(metrics2)
+                report.append(f"\n🎯 SCORE GLOBAL : {score:.1f}/100")
+                
+                if score < 50:
+                    status = "Structure à retravailler en profondeur"
+                elif score < 70:
+                    status = "Améliorations nécessaires"
+                elif score < 90:
+                    status = "Bon cocon avec optimisations possibles"
+                else:
+                    status = "Excellent cocon sémantique"
+                    
+                report.append(f"Diagnostic : {status}")
+                
+            except Exception as e:
+                print(f"Erreur lors du calcul du score global: {str(e)}")
+
             return "\n".join(report)
+
         except Exception as e:
             print(f"Erreur générale lors de la génération du rapport: {str(e)}")
             print(f"Type d'erreur: {type(e)}")
             import traceback
             traceback.print_exc()
-            return "Erreur lors de la génération du rapport"    
-        
-
-    def _identify_significant_changes(self, metrics1, metrics2, threshold=30):
-        """Identifie les changements significatifs"""
-        changes = {'positive': [], 'negative': []}
-        
-        # Définition des métriques à analyser avec leurs descriptions
-        metrics_to_analyze = {
-            ('structural_metrics', 'density'): 'Densité du maillage',
-            ('structural_metrics', 'average_clustering'): 'Cohésion des clusters',
-            ('structural_metrics', 'reciprocity'): 'Réciprocité des liens',
-            ('accessibility_metrics', 'pages_within_3_clicks'): 'Accessibilité',
-            ('cluster_metrics', 'cluster_density'): 'Densité des clusters'
-        }
-        
-        for (category, metric), description in metrics_to_analyze.items():
-            if metric in metrics1[category] and metric in metrics2[category]:
-                before = metrics1[category][metric]
-                after = metrics2[category][metric]
-                
-                if before > 0:  # Éviter division par zéro
-                    change = ((after - before) / before) * 100
-                    if abs(change) >= threshold:
-                        message = f"{description}: {change:+.1f}%"
-                        if change > 0:
-                            changes['positive'].append(message)
-                        else:
-                            changes['negative'].append(message)
-        
-        return changes
+            return "Erreur lors de la génération du rapport"
     
     def _calculate_links_per_page(self, metrics):
         """Calcule le nombre moyen de liens par page"""

@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         d3.select("#graph").selectAll("*").remove();
     
         const width = document.getElementById('graph').clientWidth;
-        const height = 600;
+        const height = document.getElementById('graph').clientHeight;
     
         const svg = d3.select("#graph")
             .append("svg")

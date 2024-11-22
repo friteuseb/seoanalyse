@@ -1,15 +1,169 @@
-from cocon_analyzer import CoconAnalyzer
+import redis
+import json
+import logging
 import numpy as np
-from collections import defaultdict
 import networkx as nx
-from scipy.sparse import csr_matrix
-from scipy.sparse.linalg import eigs
+from dataclasses import dataclass
+import subprocess
+from collections import defaultdict
+from urllib.parse import urlparse
+from cocon_analyzer import CoconAnalyzer 
+
+# Configuration du logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+@dataclass
+class PageMetrics:
+    url: str
+    depth: int
+    cluster: int
+    label: str
+    incoming_links: int
+    outgoing_links: int
+    internal_pagerank: float
+    semantic_relevance: float
+    content_length: int
 
 class EnhancedCoconAnalyzer(CoconAnalyzer):
     def __init__(self, redis_client, crawl_id: str):
         super().__init__(redis_client, crawl_id)
         self.semantic_transition_matrix = None
         self.load_data()
+
+    def calculate_scientific_metrics(self):
+        try:
+            metrics = {
+                'structural_metrics': self._calculate_structural_metrics(),
+                'semantic_metrics': self._calculate_semantic_metrics(),
+                'accessibility_metrics': self._calculate_accessibility_metrics(),
+                'cluster_metrics': self._calculate_cluster_metrics()
+            }
+            return metrics
+        except Exception as e:
+            logging.error(f"Erreur lors du calcul des métriques: {str(e)}")
+            return {
+                'structural_metrics': self._get_default_structural_metrics(),
+                'semantic_metrics': self._get_default_semantic_metrics(),
+                'accessibility_metrics': self._get_default_accessibility_metrics(),
+                'cluster_metrics': self._get_default_cluster_metrics()
+            }
+
+    def _get_default_structural_metrics(self):
+        return {
+            'average_clustering': 0.0,
+            'reciprocity': 0.0,
+            'density': 0.0,
+            'average_shortest_path': 0.0,
+            'average_degree': 0.0,
+            'number_of_nodes': len(self.pages),
+            'number_of_edges': len(self.graph.edges()),
+            'bilingual_links': 0,
+            'thematic_links': 0,
+            'cross_thematic_links': 0
+        }
+
+    def _get_default_semantic_metrics(self):
+        return {
+            'cluster_coherence': 0.0,
+            'semantic_flow_strength': 0.0,
+            'inter_cluster_density': 0.0,
+            'language_balance': 0.0,
+            'thematic_isolation': 0.0
+        }
+
+    def _get_default_accessibility_metrics(self):
+        return {
+            'mean_depth': 1.0,
+            'depth_variance': 0.0,
+            'max_depth': 1.0,
+            'min_depth': 1.0,
+            'pagerank_entropy': 0.0,
+            'pages_within_3_clicks': 1.0
+        }
+
+    def _get_default_cluster_metrics(self):
+        return {
+            'number_of_clusters': len(self.clusters),
+            'average_cluster_size': 0.0,
+            'cluster_size_variance': 0.0,
+            'cluster_density': 0.0,
+            'inter_cluster_links': 0
+        }
+
+    def _calculate_structural_metrics(self):
+        try:
+            if not self.graph.nodes():
+                return self._get_default_structural_metrics()
+                
+            metrics = {
+                'average_clustering': float(nx.average_clustering(self.graph.to_undirected())),
+                'reciprocity': float(nx.reciprocity(self.graph)),
+                'density': float(nx.density(self.graph)),
+                'average_degree': float(sum(dict(self.graph.degree()).values()) / max(1, self.graph.number_of_nodes())),
+                'number_of_nodes': self.graph.number_of_nodes(),
+                'number_of_edges': self.graph.number_of_edges(),
+                'bilingual_links': self._count_bilingual_links(),
+                'thematic_links': self._count_thematic_links(),
+                'cross_thematic_links': self._count_cross_thematic_links()
+            }
+            
+            try:
+                metrics['average_shortest_path'] = float(nx.average_shortest_path_length(self.graph))
+            except:
+                metrics['average_shortest_path'] = float('inf')
+                
+            return metrics
+            
+        except Exception as e:
+            logging.error(f"Erreur lors du calcul des métriques structurelles: {str(e)}")
+            return self._get_default_structural_metrics()
+
+    def _calculate_accessibility_metrics(self):
+        """Calcul des métriques d'accessibilité avec gestion d'erreur robuste"""
+        try:
+            if not self.graph.nodes():
+                return self._get_default_accessibility_metrics()
+
+            # Trouver la page racine
+            if not self.root_url:
+                out_degrees = self.graph.out_degree()
+                if out_degrees:
+                    self.root_url = max(out_degrees, key=lambda x: x[1])[0]
+                else:
+                    return self._get_default_accessibility_metrics()
+
+            depths = []
+            for node in self.graph.nodes():
+                try:
+                    if nx.has_path(self.graph, self.root_url, node):
+                        depth = nx.shortest_path_length(self.graph, self.root_url, node)
+                        depths.append(depth)
+                except:
+                    continue
+
+            if not depths:
+                return self._get_default_accessibility_metrics()
+
+            metrics = {
+                'mean_depth': float(np.mean(depths)),
+                'depth_variance': float(np.var(depths)),
+                'max_depth': float(max(depths)),
+                'min_depth': float(min(depths)),
+                'pages_within_3_clicks': float(sum(1 for d in depths if d <= 3) / len(self.graph.nodes())),
+            }
+
+            try:
+                pagerank = nx.pagerank(self.graph)
+                metrics['pagerank_entropy'] = float(self._calculate_entropy(list(pagerank.values())))
+            except:
+                metrics['pagerank_entropy'] = 0.0
+
+            return metrics
+
+        except Exception as e:
+            logging.error(f"Erreur lors du calcul des métriques d'accessibilité: {str(e)}")
+            return self._get_default_accessibility_metrics()
+        
 
     def format_change(self, before, after, inverse=False):
         """Format les changements de manière lisible avec gestion d'erreur"""
@@ -43,36 +197,6 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
             return f"{after:.2f} (non comparable)"
 
 
-    def calculate_scientific_metrics(self):
-        """Calcule les métriques scientifiques pour l'analyse du maillage"""
-        metrics = {
-            'structural_metrics': self._calculate_structural_metrics(),
-            'semantic_metrics': self._calculate_semantic_metrics(),
-            'accessibility_metrics': self._calculate_accessibility_metrics(),
-            'cluster_metrics': self._calculate_cluster_metrics()
-        }
-        return metrics
-        
-    def _calculate_structural_metrics(self):
-        """Calcul des métriques structurelles avec focus sur la qualité du maillage"""
-        try:
-            metrics = {
-                'average_clustering': float(nx.average_clustering(self.graph.to_undirected())),
-                'reciprocity': float(nx.reciprocity(self.graph)),
-                'density': float(nx.density(self.graph)),
-                'average_shortest_path': float(nx.average_shortest_path_length(self.graph)) if nx.is_strongly_connected(self.graph) else float('inf'),
-                'average_degree': float(sum(dict(self.graph.degree()).values()) / self.graph.number_of_nodes()),
-                'number_of_nodes': self.graph.number_of_nodes(),
-                'number_of_edges': self.graph.number_of_edges(),
-                # Nouvelles métriques
-                'bilingual_links': self._count_bilingual_links(),
-                'thematic_links': self._count_thematic_links(),
-                'cross_thematic_links': self._count_cross_thematic_links()
-            }
-            return metrics
-        except Exception as e:
-            print(f"Erreur lors du calcul des métriques structurelles: {str(e)}")
-            return {}
 
     def _count_bilingual_links(self):
         """Compte les liens entre versions linguistiques"""
@@ -171,62 +295,7 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
                 'thematic_isolation': 0
             }
         
-    def _calculate_accessibility_metrics(self):
-        """Calcul des métriques d'accessibilité avec gestion d'erreur robuste"""
-        metrics = {}
-        
-        try:
-            # Trouver la page avec le plus de liens sortants comme racine
-            if not self.root_url:
-                out_degrees = self.graph.out_degree()
-                if out_degrees:
-                    self.root_url = max(out_degrees, key=lambda x: x[1])[0]
-                else:
-                    self.root_url = next(iter(self.graph.nodes()))
 
-            # Calcul des plus courts chemins depuis la racine
-            depths = []
-            for node in self.graph.nodes():
-                try:
-                    if nx.has_path(self.graph, self.root_url, node):
-                        depth = nx.shortest_path_length(self.graph, self.root_url, node)
-                        depths.append(depth)
-                except:
-                    depths.append(0)  # Page inaccessible
-
-            if depths:
-                metrics['mean_depth'] = float(np.mean(depths))
-                metrics['depth_variance'] = float(np.var(depths))
-                metrics['max_depth'] = float(max(depths))
-                metrics['pages_within_3_clicks'] = float(sum(1 for d in depths if d <= 3) / len(depths))
-            else:
-                logging.warning("Aucune profondeur n'a pu être calculée")
-                metrics['mean_depth'] = 1.0
-                metrics['depth_variance'] = 0.0
-                metrics['max_depth'] = 1.0
-                metrics['pages_within_3_clicks'] = 1.0
-
-            # Calcul du PageRank
-            try:
-                pagerank = nx.pagerank(self.graph)
-                if pagerank:
-                    metrics['pagerank_entropy'] = float(self._calculate_entropy(list(pagerank.values())))
-                else:
-                    metrics['pagerank_entropy'] = 0.0
-            except:
-                metrics['pagerank_entropy'] = 0.0
-                
-            return metrics
-
-        except Exception as e:
-            logging.error(f"Erreur lors du calcul des métriques d'accessibilité : {str(e)}")
-            return {
-                'mean_depth': 1.0,
-                'depth_variance': 0.0,
-                'max_depth': 1.0,
-                'pages_within_3_clicks': 1.0,
-                'pagerank_entropy': 0.0
-            }
 
     def _calculate_cluster_metrics(self):
         """Calcul des métriques de cluster"""
@@ -603,3 +672,97 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
         improvements['global_score'] = np.mean(all_changes) if all_changes else 0
         
         return improvements
+    
+    def generate_embeddings_comparison(self, base_metrics, embedding_metrics_list, model_names):
+        """
+        Génère un tableau comparatif des différents modèles d'embeddings
+        
+        Args:
+            base_metrics: Métriques du crawl d'origine
+            embedding_metrics_list: Liste des métriques pour chaque variation d'embedding
+            model_names: Liste des noms des modèles (ex: "ada3-t60", "minilm-t75", etc.)
+        """
+        try:
+            # Définition des métriques clés à comparer
+            key_metrics = {
+                'Densité & Connectivité': [
+                    ('structural_metrics', 'density', 'Densité globale'),
+                    ('structural_metrics', 'average_clustering', 'Clustering moyen'),
+                    ('structural_metrics', 'reciprocity', 'Réciprocité'),
+                ],
+                'Qualité Thématique': [
+                    ('structural_metrics', 'thematic_links', 'Liens thématiques'),
+                    ('structural_metrics', 'cross_thematic_links', 'Liens inter-thèmes'),
+                    ('cluster_metrics', 'cluster_density', 'Densité des clusters'),
+                ],
+                'Accessibilité': [
+                    ('accessibility_metrics', 'pages_within_3_clicks', 'Pages à 3 clics'),
+                    ('accessibility_metrics', 'mean_depth', 'Profondeur moyenne'),
+                    ('accessibility_metrics', 'pagerank_entropy', 'Distribution PageRank'),
+                ]
+            }
+
+            # Création d'un DataFrame pandas pour le tableau
+            import pandas as pd
+            
+            data = []
+            for i, metrics in enumerate(embedding_metrics_list):
+                model_data = {
+                    'Modèle': model_names[i],
+                    'Threshold': int(model_names[i].split('-t')[1]),
+                    'Liens totaux': metrics['structural_metrics']['number_of_edges'],
+                }
+                
+                # Calcul des variations par rapport au crawl de base
+                for category, metric_list in key_metrics.items():
+                    for metric_path, metric_name, metric_label in metric_list:
+                        base_value = base_metrics[metric_path][metric_name]
+                        current_value = metrics[metric_path][metric_name]
+                        if base_value > 0:
+                            variation = ((current_value - base_value) / base_value) * 100
+                        else:
+                            variation = float('inf') if current_value > 0 else 0
+                        
+                        model_data[metric_label] = f"{current_value:.2f} ({variation:+.1f}%)"
+                
+                data.append(model_data)
+                
+            # Création du DataFrame
+            df = pd.DataFrame(data)
+
+            # Ajout d'une ligne de score global
+            df['Score Global'] = df.apply(self._calculate_model_score, axis=1)
+            
+            # Tri par score global
+            df = df.sort_values('Score Global', ascending=False)
+
+            return df
+
+        except Exception as e:
+            print(f"Erreur lors de la génération du tableau comparatif: {str(e)}")
+            return None
+
+    def _calculate_model_score(self, row):
+        """Calcule un score global pour chaque modèle"""
+        try:
+            score = 0
+            # Densité (max 30 points)
+            density_value = float(row['Densité globale'].split()[0])
+            score += min(30, density_value * 100)
+            
+            # Clustering (max 20 points)
+            clustering_value = float(row['Clustering moyen'].split()[0])
+            score += min(20, clustering_value * 40)
+            
+            # Accessibilité (max 30 points)
+            accessibility = float(row['Pages à 3 clics'].split()[0])
+            score += min(30, accessibility * 30)
+            
+            # Cohérence thématique (max 20 points)
+            cluster_density = float(row['Densité des clusters'].split()[0])
+            score += min(20, cluster_density * 40)
+            
+            return round(score, 1)
+        except Exception as e:
+            print(f"Erreur lors du calcul du score: {str(e)}")
+            return 0

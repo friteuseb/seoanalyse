@@ -9,6 +9,34 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
         self.semantic_transition_matrix = None
         self.load_data()
 
+
+
+    def _normalize_url(self, url):
+        """Normalise une URL en extrayant uniquement le dernier segment"""
+        try:
+            # Retirer les éventuels slashes de fin
+            url = url.rstrip('/')
+            
+            # Récupérer le dernier segment
+            last_segment = url.split('/')[-1]
+            
+            # Retirer l'extension si elle existe (.html ou autre)
+            if '.' in last_segment:
+                last_segment = last_segment.split('.')[0]
+                
+            return last_segment
+            
+        except Exception as e:
+            logging.error(f"Erreur de normalisation d'URL {url}: {str(e)}")
+            return url
+
+    # Exemple d'utilisation :
+    # "https://chadyagamma.fr/guide-sonotherapie/sonotherapie-benefices-domicile/"
+    #  -> "sonotherapie-benefices-domicile"
+    #
+    # "http://0.0.0.0:8000/sonotherapie-benefices-domicile.html"
+    #  -> "sonotherapie-benefices-domicile"
+    
     def calculate_scientific_metrics(self):
         """Calcule toutes les métriques scientifiques pour l'analyse"""
         try:

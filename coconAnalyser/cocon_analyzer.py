@@ -31,7 +31,7 @@ class CoconAnalyzer:
         self.root_url = None
 
     def load_data(self):
-        """Charge et parse les données depuis Redis"""
+        """Charge et parse les données depuis Redis avec normalisation des URLs"""
         try:
             pattern = f"{self.crawl_id}:doc:*"
             
@@ -41,16 +41,22 @@ class CoconAnalyzer:
                     if not doc_data:
                         continue
 
-                    url = doc_data[b'url'].decode('utf-8').rstrip('/')
+                    # Normalisation de l'URL de la page
+                    url = self._normalize_url(doc_data[b'url'].decode('utf-8'))
+                    
+                    # Normalisation des liens internes
                     internal_links = json.loads(doc_data.get(b'internal_links_out', b'[]').decode('utf-8'))
+                    normalized_links = [self._normalize_url(link) for link in internal_links]
+                    
+                    # Construction du graphe avec les URLs normalisées
+                    self.graph.add_node(url)
+                    for target in normalized_links:
+                        self.graph.add_edge(url, target)
+
                     cluster = int(doc_data.get(b'cluster', b'0').decode('utf-8'))
                     label = doc_data.get(b'label', b'').decode('utf-8')
                     links_count = int(doc_data.get(b'links_count', b'0').decode('utf-8'))
                     content_length = int(doc_data.get(b'content_length', b'0').decode('utf-8'))
-
-                    self.graph.add_node(url)
-                    for target in internal_links:
-                        self.graph.add_edge(url, target.rstrip('/'))
 
                     self.pages[url] = PageMetrics(
                         url=url,
@@ -68,10 +74,12 @@ class CoconAnalyzer:
 
                 except Exception as e:
                     logging.error(f"Erreur lors du traitement de la clé {key}: {str(e)}")
+                    continue
 
+            # Identifier la racine et mettre à jour les métriques
             self._identify_root()
             self._update_metrics()
-
+            
         except Exception as e:
             logging.error(f"Erreur lors du chargement des données : {str(e)}")
             raise

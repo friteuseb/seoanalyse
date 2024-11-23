@@ -169,3 +169,60 @@ class Config:
 4. **Documentation des Changements**
    - Noter les modifications effectuées
    - Corréler avec les variations de métriques
+
+
+
+
+
+# CIR Compare 
+# Tableau des Métriques d'Analyse du Cocon Sémantique
+
+## 1. Métriques de Structure
+
+| Métrique | Description | Formule | Valeur Optimale | Interprétation |
+|----------|-------------|---------|-----------------|----------------|
+| Densité du graphe | Ratio liens existants/possibles | liens / (pages * (pages-1)) | 0.1-0.3 | Mesure l'équilibre entre navigation et hiérarchie |
+| Profondeur moyenne | Moyenne des chemins depuis racine | avg(shortest_paths) | 1.5-2.5 | Évalue l'efficacité de la structure hiérarchique |
+| Accessibilité à 3 clics | % pages proches de la racine | (pages_≤3_clics / total) * 100 | >80% | Indique la facilité de navigation |
+
+## 2. Métriques de Distribution
+
+| Métrique | Description | Formule | Valeur Optimale | Interprétation |
+|----------|-------------|---------|-----------------|----------------|
+| Entropie PageRank | Distribution de l'autorité | -Σ(PR_i * log2(PR_i)) | >3.0 | Mesure l'équilibre de la distribution du PageRank |
+| Balance thématique | Ratio intra/inter clusters | liens_intra / liens_inter | 1.0-2.0 | Évalue l'équilibre entre cohésion et connectivité |
+
+## 3. Scores Composites
+
+| Score | Composantes | Pondération | Objectif |
+|-------|-------------|-------------|-----------|
+| Score Global | Moyenne pondérée | 0.3 * densité + 0.3 * accessibilité + 0.2 * entropie + 0.2 * balance | >70% | 
+| Score Technique | Métriques structurelles | Selon impact SEO | >80% |
+| Score UX | Métriques navigation | Selon comportement utilisateur | >75% |
+
+
+# Métriques d'Analyse des Cocons Sémantiques Émergents
+
+## 1. Mesures de Cohérence
+
+| Métrique | Description | Optimum | Interprétation |
+|----------|-------------|---------|----------------|
+| Similarité Intra-Cluster | Cohésion sémantique moyenne des pages liées | > 0.7 | Mesure la pertinence naturelle des connexions |
+| Équilibre Inter-Clusters | Distribution des liens entre groupes thématiques | 0.3-0.5 | Force des ponts thématiques |
+| Émergence Structurelle | Degré de formation naturelle des clusters | > 0.6 | Opposition à une structure forcée |
+
+## 2. Métriques de Flux
+
+| Métrique | Description | Optimum | Interprétation |
+|----------|-------------|---------|----------------|
+| Efficacité du Transfert | % de PageRank conservé lors des transmissions | > 0.8 | Mesure les pertes de jus de lien |
+| Distribution d'Autorité | Entropie de la distribution du PageRank | > 3.0 | Équilibre vs concentration |
+| Points d'Accumulation | Identification des hubs naturels d'autorité | N/A | Cartographie des points forts |
+
+## 3. Accessibilité Naturelle
+
+| Métrique | Description | Optimum | Interprétation |
+|----------|-------------|---------|----------------|
+| Densité Émergente | Ratio liens existants/possibles | 0.1-0.3 | Équilibre naturel du maillage |
+| Profondeur Effective | Distribution des chemins d'accès | < 3.5 | Facilité de navigation |
+| Résilience | Robustesse aux suppressions de liens | > 0.6 | Stabilité de la structure |

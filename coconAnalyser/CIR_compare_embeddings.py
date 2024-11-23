@@ -268,13 +268,31 @@ class EmbeddingsComparator:
     def _export_results(self, comparison_data, link_comparison_matrix=None):
         """Export les résultats dans différents formats"""
         try:
-            df, descriptions = comparison_data  # Extraction des données passées en paramètre
-            
+            df, descriptions = comparison_data
+
             if link_comparison_matrix is not None:
-                # Export de la matrice de comparaison
-                link_comparison_matrix.to_csv('link_comparison_matrix.csv')
-                    
-            # Export Markdown
+                # Créer un nouveau DataFrame avec les colonnes séparées pour % et détails
+                matrix_data = []
+                for idx in link_comparison_matrix.index:
+                    row_data = {'Model': idx}
+                    for col in link_comparison_matrix.columns:
+                        value = link_comparison_matrix.loc[idx, col]
+                        if isinstance(value, str) and '(' in value:
+                            # Séparer le pourcentage et les détails
+                            pct = value.split('%')[0].strip()
+                            details = '(' + value.split('(')[1]
+                            row_data[f"{col}_pct"] = pct
+                            row_data[f"{col}_details"] = details
+                        else:
+                            row_data[f"{col}_pct"] = ''
+                            row_data[f"{col}_details"] = value
+                    matrix_data.append(row_data)
+                
+                # Créer et exporter le nouveau DataFrame
+                parsed_matrix = pd.DataFrame(matrix_data)
+                parsed_matrix.to_csv('link_comparison_matrix.csv', index=False)
+
+            # Export Markdown comme avant...
             with open('embedding_comparison.md', 'w') as f:
                 f.write("# Analyse Comparative des Modèles d'Embedding\n\n")
                 f.write("## Métriques Détaillées\n")
@@ -294,7 +312,6 @@ class EmbeddingsComparator:
         except Exception as e:
             logging.error(f"Erreur lors de l'export des résultats: {str(e)}")
             raise
-
 
 
     def _generate_comparison_plots(self, comparison_table):

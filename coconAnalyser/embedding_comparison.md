@@ -1,21 +1,21 @@
 # Analyse Comparative des Modèles d'Embedding
 
 ## Métriques Détaillées
-|    | Modèle        |   Threshold |   Liens totaux | Densité du maillage   | Accessibilité à 3 clics   |   Distribution PageRank |   Efficacité du transfert |   Ratio thématique |   Score Global |
-|---:|:--------------|------------:|---------------:|:----------------------|:--------------------------|------------------------:|--------------------------:|-------------------:|---------------:|
-|  7 | ada2-t60      |          60 |            558 | 0.15 (+26.7%) ✅      | 91.8% (-8.2%) ⚠️          |                    5.67 |                      0.91 |               0.77 |           10.5 |
-|  8 | ada2-t80      |          80 |            558 | 0.15 (+26.7%) ✅      | 91.8% (-8.2%) ⚠️          |                    5.67 |                      0.91 |               0.79 |           10.5 |
-|  9 | ada2-t75      |          75 |            558 | 0.15 (+26.7%) ✅      | 91.8% (-8.2%) ⚠️          |                    5.67 |                      0.91 |               0.85 |           10.5 |
-|  1 | ada3-t60      |          60 |            557 | 0.15 (+26.5%) ✅      | 88.5% (-11.5%) ⚠️         |                    5.65 |                      0.91 |               0.88 |           10.4 |
-|  4 | camembert-t60 |          60 |            550 | 0.15 (+24.9%) ✅      | 90.2% (-9.8%) ⚠️          |                    5.42 |                      0.92 |               0.78 |           10.1 |
-|  6 | camembert-t75 |          75 |            535 | 0.15 (+21.5%) ✅      | 90.2% (-9.8%) ⚠️          |                    5.43 |                      0.92 |               0.69 |            9.2 |
-| 12 | minilm-t20    |          20 |            498 | 0.14 (+13.1%) ✅      | 86.9% (-13.1%) ⚠️         |                    5.39 |                      0.84 |               0.85 |            7.2 |
-|  5 | camembert-t80 |          80 |            462 | 0.13 (+4.9%) ✅       | 62.3% (-37.7%) ⚠️         |                    5.44 |                      0.9  |               0.7  |            5.2 |
-|  0 | cocon-t0      |           0 |            485 | 0.12 (+0.0%) ✅       | 100.0% (+0.0%) ⚠️         |                    5.76 |                      0.95 |               0.81 |            4.1 |
-|  3 | ada3-t75      |          75 |            437 | 0.12 (-0.7%) ✅       | 83.6% (-16.4%) ⚠️         |                    5.66 |                      0.87 |               0.76 |            3.9 |
-|  2 | ada3-t80      |          80 |            236 | 0.06 (-46.4%) ⚠️      | 73.8% (-26.2%) ⚠️         |                    5.62 |                      0.79 |               0.88 |            0   |
-| 10 | minilm-t60    |          60 |             15 | 0.00 (-96.6%) ⚠️      | 16.4% (-83.6%) ⚠️         |                    5.4  |                      0.09 |               0.67 |            0   |
-| 11 | minilm-t40    |          40 |            100 | 0.03 (-77.3%) ⚠️      | 27.9% (-72.1%) ⚠️         |                    5.3  |                      0.45 |               0.93 |            0   |
+|    | Modèle        |   Threshold |   Liens totaux | Pages Orphelines   | Densité du maillage   | Accessibilité à 3 clics   |   Distribution PageRank |   Efficacité du transfert |   Ratio thématique |   Score Global |
+|---:|:--------------|------------:|---------------:|:-------------------|:----------------------|:--------------------------|------------------------:|--------------------------:|-------------------:|---------------:|
+|  7 | ada2-t60      |          60 |            558 | 2 (3.3%)           | 0.15 (+26.7%) ✅      | 91.8% (-8.2%) ⚠️          |                    5.67 |                      0.91 |               0.77 |           10.5 |
+|  8 | ada2-t80      |          80 |            558 | 2 (3.3%)           | 0.15 (+26.7%) ✅      | 91.8% (-8.2%) ⚠️          |                    5.67 |                      0.91 |               0.79 |           10.5 |
+|  9 | ada2-t75      |          75 |            558 | 2 (3.3%)           | 0.15 (+26.7%) ✅      | 91.8% (-8.2%) ⚠️          |                    5.67 |                      0.91 |               0.85 |           10.5 |
+|  1 | ada3-t60      |          60 |            557 | 2 (3.3%)           | 0.15 (+26.5%) ✅      | 88.5% (-11.5%) ⚠️         |                    5.65 |                      0.91 |               0.88 |           10.4 |
+|  4 | camembert-t60 |          60 |            550 | 2 (3.3%)           | 0.15 (+24.9%) ✅      | 90.2% (-9.8%) ⚠️          |                    5.42 |                      0.92 |               0.78 |           10.1 |
+|  6 | camembert-t75 |          75 |            535 | 2 (3.3%)           | 0.15 (+21.5%) ✅      | 90.2% (-9.8%) ⚠️          |                    5.43 |                      0.92 |               0.69 |            9.2 |
+| 12 | minilm-t20    |          20 |            498 | 6 (10.0%)          | 0.14 (+13.1%) ✅      | 86.9% (-13.1%) ⚠️         |                    5.39 |                      0.84 |               0.85 |            7.2 |
+|  5 | camembert-t80 |          80 |            462 | 2 (3.3%)           | 0.13 (+4.9%) ✅       | 62.3% (-37.7%) ⚠️         |                    5.44 |                      0.9  |               0.7  |            5.2 |
+|  0 | cocon-t0      |           0 |            485 | 0 (0.0%)           | 0.12 (+0.0%) ✅       | 100.0% (+0.0%) ⚠️         |                    5.76 |                      0.95 |               0.81 |            4.1 |
+|  3 | ada3-t75      |          75 |            437 | 5 (8.3%)           | 0.12 (-0.7%) ✅       | 83.6% (-16.4%) ⚠️         |                    5.66 |                      0.87 |               0.76 |            3.9 |
+|  2 | ada3-t80      |          80 |            236 | 11 (18.3%)         | 0.06 (-46.4%) ⚠️      | 73.8% (-26.2%) ⚠️         |                    5.62 |                      0.79 |               0.88 |            0   |
+| 10 | minilm-t60    |          60 |             15 | 47 (78.3%)         | 0.00 (-96.6%) ⚠️      | 16.4% (-83.6%) ⚠️         |                    5.4  |                      0.09 |               0.67 |            0   |
+| 11 | minilm-t40    |          40 |            100 | 30 (50.0%)         | 0.03 (-77.3%) ⚠️      | 27.9% (-72.1%) ⚠️         |                    5.3  |                      0.45 |               0.93 |            0   |
 
 ## Matrice de Comparaison des Liens
 |               | cocon-base           | cocon-t0             | ada3-t60             | ada3-t80             | ada3-t75             | camembert-t60        | camembert-t80        | camembert-t75        | ada2-t60             | ada2-t80             | ada2-t75             | minilm-t60         | minilm-t40           | minilm-t20           |
@@ -39,6 +39,18 @@
 
 === GUIDE D'INTERPRÉTATION DES MÉTRIQUES ===
 
+
+## Pages Orphelines
+Description: Pages qui n'ont aucun lien entrant (sauf la page d'accueil)
+Interprétation:
+• Format: nombre (pourcentage) [variation%] status
+• ✅ : Réduction ou stabilité du nombre de pages orphelines
+• ⚠️ : Augmentation du nombre de pages orphelines
+
+Seuils recommandés:
+• Optimal: < 5% du total des pages
+• Acceptable: 5-10% du total des pages
+• Problématique: > 10% du total des pages
 
 ## Métriques Fondamentales
 
@@ -85,3 +97,49 @@ Interprétation:
 - < 0.4 : Faible cohérence
 - > 0.6 : Bonne cohérence
 - > 0.8 : Très forte cohérence
+
+Statistiques globales des pages orphelines:
+• Moyenne: 8.7 pages
+• Minimum: 0 pages
+• Maximum: 47 pages
+
+## Détail des Pages Orphelines
+
+### ada2-t60
+- 2 (3.3%)
+
+### ada2-t80
+- 2 (3.3%)
+
+### ada2-t75
+- 2 (3.3%)
+
+### ada3-t60
+- 2 (3.3%)
+
+### camembert-t60
+- 2 (3.3%)
+
+### camembert-t75
+- 2 (3.3%)
+
+### minilm-t20
+- 6 (10.0%)
+
+### camembert-t80
+- 2 (3.3%)
+
+### cocon-t0
+- 0 (0.0%)
+
+### ada3-t75
+- 5 (8.3%)
+
+### ada3-t80
+- 11 (18.3%)
+
+### minilm-t60
+- 47 (78.3%)
+
+### minilm-t40
+- 30 (50.0%)

@@ -180,13 +180,33 @@ class EmbeddingsComparator:
         """Génère un tableau comparatif détaillé des différents modèles d'embeddings"""
         try:
             data = []
+            orphan_counts = []  # Pour stocker uniquement les nombres de pages orphelines
+            
             for i, metrics in enumerate(embedding_metrics_list):
+                # Récupération des métriques de base
                 model_data = {
                     'Modèle': model_names[i],
                     'Threshold': int(model_names[i].split('-t')[1]),
                     'Liens totaux': metrics['structural_metrics'].get('number_of_edges', 0),
                 }
+
+                # Ajout des pages orphelines
+                orphan_stats = metrics['structural_metrics'].get('orphan_pages', {})
+                base_orphan_stats = base_metrics['structural_metrics'].get('orphan_pages', {})
                 
+                orphan_count = orphan_stats.get('count', 0)
+                orphan_counts.append(orphan_count)  # Stocker uniquement le nombre
+                orphan_percentage = orphan_stats.get('percentage', 0.0)
+                base_orphan_count = base_orphan_stats.get('count', 0)
+                
+                # Calcul de la variation des pages orphelines
+                if base_orphan_count > 0:
+                    orphan_variation = ((orphan_count - base_orphan_count) / base_orphan_count) * 100
+                    orphan_status = "⚠️" if orphan_count > base_orphan_count else "✅"
+                    model_data['Pages Orphelines'] = f"{orphan_count} ({orphan_percentage:.1f}%) [{orphan_variation:+.1f}%] {orphan_status}"
+                else:
+                    model_data['Pages Orphelines'] = f"{orphan_count} ({orphan_percentage:.1f}%)"
+                    
                 # Parcours des catégories et métriques définies
                 for category, metric_list in self.metrics_definition.items():
                     for metric in metric_list:
@@ -222,14 +242,38 @@ class EmbeddingsComparator:
                             logging.error(f"Erreur pour la métrique {metric_name}: {str(e)}")
                             model_data[metric['label']] = "N/A"
                 
+                # Calcul du score global
                 model_data['Score Global'] = self._calculate_objective_score(metrics)
                 data.append(model_data)
 
+            # Création du DataFrame
             df = pd.DataFrame(data)
+            
+            # Réorganisation des colonnes pour mettre les pages orphelines après les liens totaux
+            cols = df.columns.tolist()
+            orphan_idx = cols.index('Pages Orphelines')
+            cols.insert(3, cols.pop(orphan_idx))  # Déplacer Pages Orphelines après Liens totaux
+            df = df[cols]
+            
+            # Tri par Score Global
             df = df.sort_values('Score Global', ascending=False)
             
-            # Ajout des descriptions
+            # Génération des descriptions incluant les pages orphelines
             descriptions = self._generate_metric_descriptions()
+            
+            # Calcul des statistiques sur les nombres de pages orphelines uniquement
+            stats = {
+                'total_models': len(data),
+                'avg_orphan_pages': float(np.mean(orphan_counts)),
+                'min_orphan_pages': min(orphan_counts),
+                'max_orphan_pages': max(orphan_counts)
+            }
+            
+            # Ajout des statistiques aux descriptions
+            descriptions += f"\n\nStatistiques globales des pages orphelines:"
+            descriptions += f"\n• Moyenne: {stats['avg_orphan_pages']:.1f} pages"
+            descriptions += f"\n• Minimum: {stats['min_orphan_pages']} pages"
+            descriptions += f"\n• Maximum: {stats['max_orphan_pages']} pages"
             
             return df, descriptions
 
@@ -237,7 +281,7 @@ class EmbeddingsComparator:
             logging.error(f"Erreur lors de la génération du tableau comparatif: {str(e)}")
             traceback.print_exc()
             return None, None
-        
+            
 
     def _calculate_objective_score(self, metrics):
         """Calcule le score global basé sur les nouvelles métriques"""
@@ -266,33 +310,38 @@ class EmbeddingsComparator:
             return 0
 
     def _export_results(self, comparison_data, link_comparison_matrix=None):
-        """Export les résultats dans différents formats"""
+        """Export les résultats avec les informations sur les pages orphelines"""
         try:
             df, descriptions = comparison_data
 
-            if link_comparison_matrix is not None:
-                # Créer un nouveau DataFrame avec les colonnes séparées pour % et détails
-                matrix_data = []
-                for idx in link_comparison_matrix.index:
-                    row_data = {'Model': idx}
-                    for col in link_comparison_matrix.columns:
-                        value = link_comparison_matrix.loc[idx, col]
-                        if isinstance(value, str) and '(' in value:
-                            # Séparer le pourcentage et les détails
-                            pct = value.split('%')[0].strip()
-                            details = '(' + value.split('(')[1]
-                            row_data[f"{col}_pct"] = pct
-                            row_data[f"{col}_details"] = details
-                        else:
-                            row_data[f"{col}_pct"] = ''
-                            row_data[f"{col}_details"] = value
-                    matrix_data.append(row_data)
+            # Préparer le CSV avec les détails des pages orphelines
+            csv_data = []
+            for index, row in df.iterrows():
+                orphan_info = row['Pages Orphelines']
+                # Extraire les informations des pages orphelines
+                count = int(orphan_info.split()[0])
+                percentage = float(orphan_info.split('(')[1].split('%')[0])
                 
-                # Créer et exporter le nouveau DataFrame
-                parsed_matrix = pd.DataFrame(matrix_data)
-                parsed_matrix.to_csv('link_comparison_matrix.csv', index=False)
+                csv_row = {
+                    'Modèle': row['Modèle'],
+                    'Threshold': row['Threshold'],
+                    'Liens totaux': row['Liens totaux'],
+                    'Pages Orphelines (nombre)': count,
+                    'Pages Orphelines (%)': percentage,
+                }
+                
+                # Ajouter les autres colonnes existantes
+                for col in df.columns:
+                    if col not in ['Modèle', 'Threshold', 'Liens totaux', 'Pages Orphelines']:
+                        csv_row[col] = row[col]
+                        
+                csv_data.append(csv_row)
 
-            # Export Markdown comme avant...
+            # Créer un nouveau DataFrame pour le CSV
+            csv_df = pd.DataFrame(csv_data)
+            csv_df.to_csv('embedding_comparison_detailed.csv', index=False)
+
+            # Export Markdown
             with open('embedding_comparison.md', 'w') as f:
                 f.write("# Analyse Comparative des Modèles d'Embedding\n\n")
                 f.write("## Métriques Détaillées\n")
@@ -306,6 +355,13 @@ class EmbeddingsComparator:
                 
                 f.write("## Guide d'Interprétation\n")
                 f.write(descriptions)
+                
+                # Ajouter une section spécifique pour les pages orphelines
+                f.write("\n\n## Détail des Pages Orphelines\n")
+                for index, row in df.iterrows():
+                    f.write(f"\n### {row['Modèle']}\n")
+                    orphan_info = row['Pages Orphelines']
+                    f.write(f"- {orphan_info}\n")
                     
             print("Exports générés avec succès")
                 
@@ -412,10 +468,23 @@ class EmbeddingsComparator:
         
 
     def _generate_metric_descriptions(self):
-        """Génère une description détaillée de toutes les métriques"""
+        """Génère une description détaillée de toutes les métriques, incluant les pages orphelines"""
         descriptions = []
         descriptions.append("\n=== GUIDE D'INTERPRÉTATION DES MÉTRIQUES ===\n")
         
+        # Ajout de la section sur les pages orphelines
+        descriptions.append("\n## Pages Orphelines")
+        descriptions.append("Description: Pages qui n'ont aucun lien entrant (sauf la page d'accueil)")
+        descriptions.append("Interprétation:")
+        descriptions.append("• Format: nombre (pourcentage) [variation%] status")
+        descriptions.append("• ✅ : Réduction ou stabilité du nombre de pages orphelines")
+        descriptions.append("• ⚠️ : Augmentation du nombre de pages orphelines")
+        descriptions.append("\nSeuils recommandés:")
+        descriptions.append("• Optimal: < 5% du total des pages")
+        descriptions.append("• Acceptable: 5-10% du total des pages")
+        descriptions.append("• Problématique: > 10% du total des pages")
+        
+        # Descriptions existantes
         for category, metrics in self.metrics_definition.items():
             descriptions.append(f"\n## {category}")
             for metric in metrics:
@@ -425,7 +494,7 @@ class EmbeddingsComparator:
                 descriptions.append("Interprétation:")
                 for level, desc in metric['interpretation'].items():
                     descriptions.append(f"- {desc}")
-                
+                    
         return '\n'.join(descriptions)
 
 

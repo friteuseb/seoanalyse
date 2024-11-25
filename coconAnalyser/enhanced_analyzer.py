@@ -79,7 +79,9 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
                 'number_of_edges': self.graph.number_of_edges(),
                 'bilingual_links': self._count_bilingual_links(),
                 'thematic_links': self._count_thematic_links(),
-                'cross_thematic_links': self._count_cross_thematic_links()
+                'cross_thematic_links': self._count_cross_thematic_links(),
+                'orphan_pages': self.get_orphan_pages_stats()
+
             }
             
             try:
@@ -242,7 +244,13 @@ class EnhancedCoconAnalyzer(CoconAnalyzer):
             'bilingual_links': 0,
             'thematic_links': 0,
             'cross_thematic_links': 0,
-            'average_shortest_path': float('inf')
+            'average_shortest_path': float('inf'),
+            'orphan_pages': {
+                'count': 0,
+                'percentage': 0.0,
+                'urls': [],
+                'details': "Erreur lors du calcul"
+            }
         }
 
     def _get_default_semantic_metrics(self):

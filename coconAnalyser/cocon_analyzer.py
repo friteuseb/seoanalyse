@@ -20,6 +20,7 @@ class PageMetrics:
     internal_pagerank: float
     semantic_relevance: float
     content_length: int
+    is_orphan: bool = False  
 
 class CoconAnalyzer:
     def __init__(self, redis_client, crawl_id: str):
@@ -29,6 +30,8 @@ class CoconAnalyzer:
         self.graph = nx.DiGraph()
         self.clusters = defaultdict(list)
         self.root_url = None
+        self.orphan_pages = set()  # Ajout d'un set pour suivre les pages orphelines
+
 
     def load_data(self):
         """Charge et parse les données depuis Redis avec normalisation des URLs"""
@@ -96,8 +99,135 @@ class CoconAnalyzer:
                 max_outgoing = outgoing_count
                 self.root_url = url
 
+
+    def _detect_issues(self):
+        """Détecte les problèmes potentiels dans le cocon"""
+        try:
+            issues = {
+                "orphan_pages": [],
+                "dead_ends": [],
+                "deep_pages": [],
+                "weak_clusters": []
+            }
+
+            # Utilisation de in_degree pour vérifier les liens entrants
+            for node in self.graph.nodes():
+                in_degree = self.graph.in_degree(node)
+                out_degree = self.graph.out_degree(node)
+                
+                # Une page est orpheline si elle n'a aucun lien entrant ET n'est pas la page d'accueil
+                if in_degree == 0 and node != self.root_url:
+                    issues["orphan_pages"].append(node)
+                    logging.info(f"Page orpheline détectée: {node} (0 liens entrants)")
+                
+                # Une page est un cul-de-sac si elle n'a aucun lien sortant
+                if out_degree == 0:
+                    issues["dead_ends"].append(node)
+                
+                # Pages trop profondes
+                if self.pages[node].depth > 3:
+                    issues["deep_pages"].append(node)
+
+            # Logs de debug détaillés
+            logging.info(f"=== Analyse de la structure des liens ===")
+            logging.info(f"Nombre total de pages: {len(self.graph.nodes())}")
+            logging.info(f"Nombre total de liens: {len(self.graph.edges())}")
+            logging.info(f"Pages orphelines trouvées: {len(issues['orphan_pages'])}")
+            
+            # Afficher quelques exemples de liens pour vérification
+            if len(self.graph.edges()) > 0:
+                logging.info("\nExemples de liens existants:")
+                for source, target in list(self.graph.edges())[:5]:
+                    logging.info(f"{source} -> {target}")
+
+            return issues
+
+        except Exception as e:
+            logging.error(f"Erreur lors de la détection des problèmes: {str(e)}")
+            return {"orphan_pages": [], "dead_ends": [], "deep_pages": [], "weak_clusters": []}
+        
+
+        
+
+    def get_orphan_pages_stats(self):
+        """Retourne les statistiques détaillées sur les pages orphelines"""
+        try:
+            issues = self._detect_issues()
+            orphan_pages = issues["orphan_pages"]
+            total_pages = self.graph.number_of_nodes()
+            
+            # Exclure la page d'accueil du total
+            total_non_home = total_pages - (1 if self.root_url else 0)
+            
+            # Calcul du pourcentage
+            percentage = (len(orphan_pages) / total_non_home * 100) if total_non_home > 0 else 0
+            
+            # Collecter des informations détaillées sur chaque page orpheline
+            orphan_details = []
+            for url in orphan_pages:
+                detail = {
+                    'url': url,
+                    'out_links': list(self.graph.successors(url)),
+                    'content_length': self.pages[url].content_length if url in self.pages else 0,
+                    'cluster': self.pages[url].cluster if url in self.pages else -1
+                }
+                orphan_details.append(detail)
+            
+            # Log des statistiques détaillées
+            logging.info("\n=== Statistiques des pages orphelines ===")
+            logging.info(f"Total pages analysées: {total_pages}")
+            logging.info(f"Pages orphelines: {len(orphan_pages)} ({percentage:.2f}%)")
+            if orphan_pages:
+                logging.info("\nDétail des 5 premières pages orphelines:")
+                for detail in orphan_details[:5]:
+                    logging.info(f"URL: {detail['url']}")
+                    logging.info(f"- Liens sortants: {len(detail['out_links'])}")
+                    logging.info(f"- Cluster: {detail['cluster']}")
+
+            return {
+                'count': len(orphan_pages),
+                'percentage': round(percentage, 2),
+                'urls': orphan_pages,
+                'details': {
+                    'total_pages': total_pages,
+                    'total_links': self.graph.number_of_edges(),
+                    'orphan_details': orphan_details,
+                    'root_url': self.root_url
+                }
+            }
+
+        except Exception as e:
+            logging.error(f"Erreur lors du calcul des statistiques des pages orphelines: {str(e)}")
+            return {'count': 0, 'percentage': 0.0, 'urls': [], 'details': {}}
+        
+    def _generate_orphan_details(self):
+        """Génère des détails sur les pages orphelines"""
+        if not self.orphan_pages:
+            return "Aucune page orpheline détectée"
+        
+        details = []
+        for url in self.orphan_pages:
+            metrics = self.pages[url]
+            details.append({
+                'url': url,
+                'outgoing_links': metrics.outgoing_links,
+                'content_length': metrics.content_length,
+                'cluster': metrics.cluster
+            })
+            
+        return details
+    
+
+    def _calculate_entropy(self, distribution):
+        """Calcule l'entropie d'une distribution"""
+        distribution = np.array(distribution)
+        distribution = distribution / np.sum(distribution)
+        return -np.sum(distribution * np.log2(distribution + 1e-10))
+    
+
     def _update_metrics(self):
         """Met à jour les métriques de base pour toutes les pages"""
+        self._detect_issues()  # S'assurer que les pages orphelines sont détectées
         try:
             # Mise à jour des liens entrants/sortants
             for url in self.pages:
@@ -122,9 +252,3 @@ class CoconAnalyzer:
 
         except Exception as e:
             logging.error(f"Erreur lors de la mise à jour des métriques : {str(e)}")
-
-    def _calculate_entropy(self, distribution):
-        """Calcule l'entropie d'une distribution"""
-        distribution = np.array(distribution)
-        distribution = distribution / np.sum(distribution)
-        return -np.sum(distribution * np.log2(distribution + 1e-10))

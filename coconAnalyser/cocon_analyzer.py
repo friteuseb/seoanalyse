@@ -147,7 +147,37 @@ class CoconAnalyzer:
             return {"orphan_pages": [], "dead_ends": [], "deep_pages": [], "weak_clusters": []}
         
 
-        
+
+
+    def _calculate_objective_score(self, metrics):
+        """Mise à jour du calcul du score pour inclure les îlots"""
+        try:
+            # Score existant
+            score = super()._calculate_objective_score(metrics)
+            
+            # Pénalité pour les îlots (retirer jusqu'à 10 points)
+            islands_stats = metrics['structural_metrics'].get('islands', {})
+            island_count = islands_stats.get('count', 0)
+            main_coverage = islands_stats.get('main_island_coverage', 0)
+            
+            island_penalty = 0
+            if island_count > 1:
+                # Pénalité basée sur le nombre d'îlots et la couverture de l'îlot principal
+                island_penalty = min(10, (island_count - 1) * 3 + (100 - main_coverage) * 0.1)
+            
+            final_score = max(0, score - island_penalty)
+            
+            # Log de la pénalité
+            if island_penalty > 0:
+                logging.info(f"Pénalité îlots: -{island_penalty:.1f} points")
+                logging.info(f"• Nombre d'îlots: {island_count}")
+                logging.info(f"• Couverture principale: {main_coverage:.1f}%")
+            
+            return round(final_score, 1)
+
+        except Exception as e:
+            logging.error(f"Erreur lors du calcul du score avec îlots: {str(e)}")
+            return 0.0    
 
     def get_orphan_pages_stats(self):
         """Retourne les statistiques détaillées sur les pages orphelines"""
@@ -216,7 +246,7 @@ class CoconAnalyzer:
             })
             
         return details
-    
+
 
     def _calculate_entropy(self, distribution):
         """Calcule l'entropie d'une distribution"""
@@ -226,10 +256,9 @@ class CoconAnalyzer:
     
 
     def _update_metrics(self):
-        """Met à jour les métriques de base pour toutes les pages"""
-        self._detect_issues()  # S'assurer que les pages orphelines sont détectées
+        """Met à jour toutes les métriques des pages"""
         try:
-            # Mise à jour des liens entrants/sortants
+            # Code existant pour les liens entrants/sortants
             for url in self.pages:
                 self.pages[url].incoming_links = self.graph.in_degree(url)
                 self.pages[url].outgoing_links = self.graph.out_degree(url)
@@ -249,6 +278,7 @@ class CoconAnalyzer:
             for url, metrics in self.pages.items():
                 metrics.internal_pagerank = pagerank.get(url, 0.0)
                 metrics.depth = depths.get(url, -1)
+
 
         except Exception as e:
             logging.error(f"Erreur lors de la mise à jour des métriques : {str(e)}")

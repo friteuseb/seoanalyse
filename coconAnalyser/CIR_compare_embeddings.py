@@ -177,53 +177,44 @@ class EmbeddingsComparator:
 
 
     def generate_embeddings_comparison(self, base_metrics, embedding_metrics_list, model_names):
-        """Génère un tableau comparatif détaillé des différents modèles d'embeddings"""
         try:
             data = []
-            orphan_counts = []  # Pour stocker uniquement les nombres de pages orphelines
-            
             for i, metrics in enumerate(embedding_metrics_list):
-                # Récupération des métriques de base
                 model_data = {
                     'Modèle': model_names[i],
                     'Threshold': int(model_names[i].split('-t')[1]),
                     'Liens totaux': metrics['structural_metrics'].get('number_of_edges', 0),
                 }
-
-                # Ajout des pages orphelines
+                
                 orphan_stats = metrics['structural_metrics'].get('orphan_pages', {})
                 base_orphan_stats = base_metrics['structural_metrics'].get('orphan_pages', {})
                 
                 orphan_count = orphan_stats.get('count', 0)
-                orphan_counts.append(orphan_count)  # Stocker uniquement le nombre
                 orphan_percentage = orphan_stats.get('percentage', 0.0)
                 base_orphan_count = base_orphan_stats.get('count', 0)
                 
-                # Calcul de la variation des pages orphelines
                 if base_orphan_count > 0:
                     orphan_variation = ((orphan_count - base_orphan_count) / base_orphan_count) * 100
-                    orphan_status = "⚠️" if orphan_count > base_orphan_count else "✅"
-                    model_data['Pages Orphelines'] = f"{orphan_count} ({orphan_percentage:.1f}%) [{orphan_variation:+.1f}%] {orphan_status}"
+                    status = "⚠️" if orphan_count > base_orphan_count else "✅"
+                    model_data['Pages Orphelines'] = f"{orphan_count} ({orphan_percentage:.1f}%) [{orphan_variation:+.1f}%] {status}"
                 else:
                     model_data['Pages Orphelines'] = f"{orphan_count} ({orphan_percentage:.1f}%)"
                     
-                # Parcours des catégories et métriques définies
+                model_data['URLs Orphelines'] = orphan_stats.get('urls', [])[:5]
+
                 for category, metric_list in self.metrics_definition.items():
                     for metric in metric_list:
                         metric_path, metric_name = metric['path']
                         try:
                             value = metrics.get(metric_path, {}).get(metric_name, 0)
-                            value = float(value)  # Conversion explicite en float
+                            value = float(value)
                             
                             base_value = base_metrics.get(metric_path, {}).get(metric_name, 0)
-                            base_value = float(base_value)  # Conversion explicite en float
+                            base_value = float(base_value)
                             
-                            # Calcul du status avant toute multiplication par 100
                             status = self._get_metric_status(value, metric)
                             
-                            # Pour les métriques en pourcentage
                             if metric_path == 'accessibility_metrics':
-                                # Multiplication par 100 pour l'affichage uniquement
                                 display_value = value * 100
                                 if base_value > 0:
                                     variation = ((value - base_value) / base_value) * 100
@@ -231,49 +222,47 @@ class EmbeddingsComparator:
                                 else:
                                     model_data[metric['label']] = f"{display_value:.1f}%"
                             else:
-                                # Pour les métriques normales
                                 if base_value > 0:
                                     variation = ((value - base_value) / base_value) * 100
                                     model_data[metric['label']] = f"{value:.2f} ({variation:+.1f}%) {status}"
                                 else:
                                     model_data[metric['label']] = f"{value:.2f}"
-                                    
+                                        
                         except Exception as e:
                             logging.error(f"Erreur pour la métrique {metric_name}: {str(e)}")
                             model_data[metric['label']] = "N/A"
                 
-                # Calcul du score global
-                model_data['Score Global'] = self._calculate_objective_score(metrics)
+                # Score calculé différemment pour le modèle de base
+                if model_names[i] == "cocon-t0":
+                    score = self._calculate_base_score(metrics)
+                else:
+                    score = self._calculate_objective_score(metrics, base_metrics)
+                
+                model_data['Score Global'] = f"{score:.1f}"
                 data.append(model_data)
 
-            # Création du DataFrame
             df = pd.DataFrame(data)
             
-            # Réorganisation des colonnes pour mettre les pages orphelines après les liens totaux
-            cols = df.columns.tolist()
-            orphan_idx = cols.index('Pages Orphelines')
-            cols.insert(3, cols.pop(orphan_idx))  # Déplacer Pages Orphelines après Liens totaux
+            cols = ['Modèle', 'Threshold', 'Liens totaux', 'Pages Orphelines']
+            remaining_cols = [col for col in df.columns if col not in cols + ['URLs Orphelines']]
+            cols.extend(remaining_cols)
             df = df[cols]
             
-            # Tri par Score Global
-            df = df.sort_values('Score Global', ascending=False)
+            df['Score_Num'] = df['Score Global'].astype(float)
+            df = df.sort_values('Score_Num', ascending=False)
+            df = df.drop('Score_Num', axis=1)
             
-            # Génération des descriptions incluant les pages orphelines
             descriptions = self._generate_metric_descriptions()
             
-            # Calcul des statistiques sur les nombres de pages orphelines uniquement
-            stats = {
-                'total_models': len(data),
-                'avg_orphan_pages': float(np.mean(orphan_counts)),
-                'min_orphan_pages': min(orphan_counts),
-                'max_orphan_pages': max(orphan_counts)
-            }
-            
-            # Ajout des statistiques aux descriptions
-            descriptions += f"\n\nStatistiques globales des pages orphelines:"
-            descriptions += f"\n• Moyenne: {stats['avg_orphan_pages']:.1f} pages"
-            descriptions += f"\n• Minimum: {stats['min_orphan_pages']} pages"
-            descriptions += f"\n• Maximum: {stats['max_orphan_pages']} pages"
+            if any('URLs Orphelines' in model_data for model_data in data):
+                descriptions += "\n\n=== DÉTAILS DES PAGES ORPHELINES ===\n"
+                for model_data in data:
+                    descriptions += f"\n{model_data['Modèle']} :\n"
+                    descriptions += f"• {model_data['Pages Orphelines']}\n"
+                    if model_data.get('URLs Orphelines'):
+                        descriptions += "Exemples d'URLs orphelines :\n"
+                        for url in model_data['URLs Orphelines']:
+                            descriptions += f"- {url}\n"
             
             return df, descriptions
 
@@ -281,33 +270,158 @@ class EmbeddingsComparator:
             logging.error(f"Erreur lors de la génération du tableau comparatif: {str(e)}")
             traceback.print_exc()
             return None, None
-            
+        
 
-    def _calculate_objective_score(self, metrics):
-        """Calcule le score global basé sur les nouvelles métriques"""
+
+    def _calculate_base_score(self, metrics):
+        """Calcule le score pour le modèle de base"""
         try:
             score = 0
-            # Densité (0-20 points)
+            
+            # 1. Qualité du maillage (30 points)
             density = metrics['structural_metrics'].get('density', 0)
+            clustering = metrics['structural_metrics'].get('average_clustering', 0)
+            
+            # Densité optimale entre 0.1 et 0.3
             if 0.1 <= density <= 0.3:
-                score += 20 * (1 - abs(0.2 - density) / 0.1)
+                score += 15 * (1 - abs(0.2 - density) / 0.1)
+            else:
+                score += max(0, 15 * (1 - abs(0.2 - density) / 0.2))
             
-            # Distribution PageRank (0-40 points)
-            pr_metrics = metrics.get('pagerank_metrics', {})
-            entropy = pr_metrics.get('entropy', 0)
-            transfer_efficiency = pr_metrics.get('transfer_efficiency', 0)
+            # Clustering
+            score += min(15, clustering * 15)
             
-            score += min(20, entropy * 5)  # jusqu'à 20 points pour l'entropie
-            score += min(20, transfer_efficiency * 20)  # jusqu'à 20 points pour l'efficacité
+            # 2. Accessibilité du contenu (30 points)
+            pages_within_3_clicks = metrics['accessibility_metrics'].get('pages_within_3_clicks', 0)
+            mean_depth = metrics['accessibility_metrics'].get('mean_depth', float('inf'))
             
-            # Cohérence sémantique (0-40 points)
-            semantic_ratio = metrics.get('semantic_metrics', {}).get('thematic_ratio', 0)
-            score += min(40, semantic_ratio * 50)
+            # Pages accessibles en 3 clics
+            score += min(20, pages_within_3_clicks * 20)
             
-            return round(score, 1)
+            # Profondeur moyenne
+            if mean_depth < float('inf'):
+                depth_score = max(0, 10 * (1 - (mean_depth - 2) / 4))
+                score += depth_score
+            
+            # 3. Pages orphelines (20 points)
+            orphan_stats = metrics['structural_metrics'].get('orphan_pages', {})
+            orphan_percentage = orphan_stats.get('percentage', 100)
+            
+            if orphan_percentage <= 5:
+                orphan_score = 20
+            elif orphan_percentage <= 10:
+                orphan_score = 15 * (1 - (orphan_percentage - 5) / 5)
+            elif orphan_percentage <= 20:
+                orphan_score = 10 * (1 - (orphan_percentage - 10) / 10)
+            else:
+                orphan_score = max(0, 5 * (1 - (orphan_percentage - 20) / 30))
+            
+            score += orphan_score
+            
+            # 4. Cohérence sémantique (20 points)
+            semantic_metrics = metrics.get('semantic_metrics', {})
+            cluster_coherence = semantic_metrics.get('cluster_coherence', 0)
+            semantic_flow = semantic_metrics.get('semantic_flow_strength', 0)
+            
+            score += min(10, cluster_coherence * 10)
+            score += min(10, semantic_flow * 10)
+            
+            # Log détaillé
+            logging.info(f"\nDétail du calcul du score (base):")
+            logging.info(f"- Maillage: {15 * (1 - abs(0.2 - density) / 0.1) + min(15, clustering * 15):.1f}/30")
+            logging.info(f"- Accessibilité: {min(20, pages_within_3_clicks * 20) + depth_score:.1f}/30")
+            logging.info(f"- Pages orphelines: {orphan_score:.1f}/20")
+            logging.info(f"- Cohérence sémantique: {min(10, cluster_coherence * 10) + min(10, semantic_flow * 10):.1f}/20")
+            
+            return round(max(0, min(100, score)), 1)
+            
+        except Exception as e:
+            logging.error(f"Erreur lors du calcul du score de base: {str(e)}")
+            return 0.0
+
+    def _calculate_objective_score(self, metrics, base_metrics):
+        """Calcule le score en comparaison avec le modèle de base en gardant la même structure"""
+        try:
+            score = 0
+            
+            # 1. Qualité du maillage (30 points)
+            density = metrics['structural_metrics'].get('density', 0)
+            clustering = metrics['structural_metrics'].get('average_clustering', 0)
+            base_density = base_metrics['structural_metrics'].get('density', 0)
+            base_clustering = base_metrics['structural_metrics'].get('average_clustering', 0)
+            
+            # Densité comparée
+            if 0.1 <= density <= 0.3:
+                score += 15 * (1 - abs(0.2 - density) / 0.1)
+            else:
+                score += max(0, 15 * (1 - abs(0.2 - density) / 0.2))
+            
+            # Clustering comparé
+            clustering_improvement = ((clustering - base_clustering) / base_clustering) * 100 if base_clustering > 0 else 0
+            score += min(15, max(0, clustering_improvement / 10))
+            
+            # 2. Accessibilité (30 points) - même structure que l'original
+            pages_within_3_clicks = metrics['accessibility_metrics'].get('pages_within_3_clicks', 0)
+            mean_depth = metrics['accessibility_metrics'].get('mean_depth', float('inf'))
+            
+            score += min(20, pages_within_3_clicks * 20)
+            if mean_depth < float('inf'):
+                depth_score = max(0, 10 * (1 - (mean_depth - 2) / 4))
+                score += depth_score
+            
+            # 3. Pages orphelines (20 points) - même structure que l'original
+            orphan_stats = metrics['structural_metrics'].get('orphan_pages', {})
+            orphan_percentage = orphan_stats.get('percentage', 100)
+            
+            if orphan_percentage <= 5:
+                orphan_score = 20
+            elif orphan_percentage <= 10:
+                orphan_score = 15 * (1 - (orphan_percentage - 5) / 5)
+            elif orphan_percentage <= 20:
+                orphan_score = 10 * (1 - (orphan_percentage - 10) / 10)
+            else:
+                orphan_score = max(0, 5 * (1 - (orphan_percentage - 20) / 30))
+                
+            score += orphan_score
+            
+            # 4. Cohérence sémantique (20 points)
+            semantic_metrics = metrics.get('semantic_metrics', {})
+            cluster_coherence = semantic_metrics.get('cluster_coherence', 0)
+            semantic_flow = semantic_metrics.get('semantic_flow_strength', 0)
+            
+            score += min(10, cluster_coherence * 10)
+            score += min(10, semantic_flow * 10)
+            
+            # Log détaillé
+            logging.info(f"\nDétail du calcul du score (comparatif):")
+            logging.info(f"- Maillage: {score - orphan_score - min(10, semantic_flow * 10) - min(10, cluster_coherence * 10):.1f}/30")
+            logging.info(f"- Accessibilité: {min(20, pages_within_3_clicks * 20) + depth_score:.1f}/30")
+            logging.info(f"- Pages orphelines: {orphan_score:.1f}/20")
+            logging.info(f"- Cohérence sémantique: {min(10, cluster_coherence * 10) + min(10, semantic_flow * 10):.1f}/20")
+            
+            return round(max(0, min(100, score)), 1)
+            
         except Exception as e:
             logging.error(f"Erreur lors du calcul du score: {str(e)}")
-            return 0
+            return 0.0
+
+
+    def _get_score_interpretation(self, score):
+        """
+        Fournit une interprétation du score global
+        """
+        if score >= 90:
+            return "Excellent maillage, très bien optimisé ✨"
+        elif score >= 80:
+            return "Très bon maillage, quelques optimisations possibles ✅"
+        elif score >= 70:
+            return "Bon maillage, des améliorations recommandées 👍"
+        elif score >= 60:
+            return "Maillage correct mais nécessite attention ⚠️"
+        elif score >= 50:
+            return "Maillage faible, optimisations importantes nécessaires ⚠️"
+        else:
+            return "Maillage problématique, restructuration recommandée 🚨"
 
     def _export_results(self, comparison_data, link_comparison_matrix=None):
         """Export les résultats avec les informations sur les pages orphelines"""
@@ -788,14 +902,15 @@ def main():
         ).decode('utf-8').strip()
         
         redis_client = redis.Redis(host='localhost', port=int(redis_port), db=0)
-        
+
+        """"
         # Configuration des modèles à comparer
         base_crawl = "chadyagamma_fr_guide-sonotherapie___4a6f6253-3e87-45dc-aee6-4e5b6ce32f43"
         model_configs = [
             # Base model
             ("chadyagamma_fr_guide-sonotherapie___4a6f6253-3e87-45dc-aee6-4e5b6ce32f43", "cocon", 00),
 
-            # Ada3
+            # Ada3 -text-embedding-3-small
             ("0_0_0_0_8000___00f54723-34a9-4164-b9da-640c47eb694b", "ada3", 60),
             ("0_0_0_0_8000___3571e24e-9e70-4dba-afa5-b3f1ece7d360", "ada3", 80),
             ("0_0_0_0_8000___9d207f21-4588-405a-be9c-b5513c4abf51", "ada3", 75),
@@ -814,6 +929,26 @@ def main():
             ("0_0_0_0_8000___2c19db21-5c22-431d-adbe-c27c741571c7", "minilm", 60),
             ("0_0_0_0_8000___0bb7a293-c77f-41f9-b643-8989a15da831", "minilm", 40),
             ("0_0_0_0_8000___c859dffc-ad44-4e62-8875-9e3ab9f83c35", "minilm", 20),
+        ]
+        """
+
+        # Configuration des modèles à comparer
+        base_crawl = "semantic-suggestion_ecotechlab_fr___e76081e0-f04b-4d04-8461-6c6bbe91c90e"
+        model_configs = [
+            # Base model
+            ("semantic-suggestion_ecotechlab_fr___e76081e0-f04b-4d04-8461-6c6bbe91c90e", "cocon", 00),
+
+            # Ada3 -text-embedding-3-small
+            ("0_0_0_0_8000___ccc5c344-182f-4f97-871a-bcf224822003", "ada3", 60),
+
+            # CamemBERT
+            ("0_0_0_0_8000___e4dcdc31-de25-430d-9b49-c96e829f8c41", "camembert", 60),
+
+            # Ada2
+            ("0_0_0_0_8000___d7a09598-c17f-4cd7-8a86-9f4a39e528ba", "ada2", 60),
+
+            # MiniLM
+            ("0_0_0_0_8000___bd6d97bc-84f3-4551-bd05-dfe2bd040433", "minilm", 20),
         ]
         
      # Exécution de la comparaison

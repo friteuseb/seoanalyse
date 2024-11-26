@@ -97,7 +97,10 @@ def save_to_redis(identifier, content, crawl_id):
 
 def crawl_web(url):
     """Fonction principale pour le crawl web."""
-    crawl_id = f"{url.split('//')[1].replace('.', '_').replace('/', '_')}_{str(uuid.uuid4())}"
+    # Nettoyer et normaliser l'URL pour créer un ID unique
+    cleaned_url = url.split('//')[1].replace(':', '_').replace('.', '_').replace('/', '_')
+    crawl_id = f"{cleaned_url}__{str(uuid.uuid4())}"
+    
     urls = get_urls_from_sitemap(url)
     
     logging.info(f"🌐 Début du crawl web pour {url}")

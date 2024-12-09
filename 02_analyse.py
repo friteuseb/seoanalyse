@@ -1,17 +1,23 @@
 import redis
 import numpy as np
-import pandas as pd
-from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
-from sentence_transformers import SentenceTransformer
-from sklearn.feature_extraction.text import TfidfVectorizer
 import json
 import nltk
-from nltk.corpus import stopwords
 import sys
 import logging
 import subprocess
-nltk.download('stopwords', quiet=True)
+import torch
+import warnings
+import pandas as pd 
+from transformers import CamembertModel, CamembertTokenizer
+from sklearn.cluster import DBSCAN
+from sklearn.metrics import silhouette_score
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import StandardScaler
+from nltk.corpus import stopwords
+
+# Ignorer les avertissements spécifiques
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", message="Some weights of the model checkpoint")
 
 # Configuration de la journalisation
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -21,17 +27,12 @@ def get_redis_port():
         port = subprocess.check_output("ddev describe -j | jq -r '.raw.services[\"redis-1\"].host_ports | split(\",\")[0]'", shell=True)
         return int(port.strip())
     except Exception as e:
-        print(f"Erreur lors de la récupération du port Redis : {e}")
+        logging.error(f"Erreur lors de la récupération du port Redis : {e}")
         sys.exit(1)
 
-# Connexion à Redis en utilisant le port dynamique
+# Connexion à Redis
 r = redis.Redis(host='localhost', port=get_redis_port(), db=0)
 
-
-model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-
-# Utilisation des stopwords français de NLTK
-french_stop_words = list(set(stopwords.words('french')))
 
 def get_documents_from_redis(crawl_id):
     documents = []
@@ -51,38 +52,16 @@ def get_documents_from_redis(crawl_id):
         logging.warning(f"No documents found for crawl ID {crawl_id}")
     return documents
 
-def compute_embeddings(contents):
-    return model.encode(contents)
-
-def cluster_embeddings(embeddings, n_clusters=5):
-    kmeans = KMeans(n_clusters=n_clusters)
-    clusters = kmeans.fit_predict(embeddings)
-    return clusters, kmeans
-
-def reduce_dimensions(embeddings):
-    pca = PCA(n_components=2)
-    reduced_embeddings = pca.fit_transform(embeddings)
-    return reduced_embeddings
-
-def determine_cluster_labels(contents, clusters, n_clusters=5):
-    vectorizer = TfidfVectorizer(stop_words=french_stop_words)
-    X = vectorizer.fit_transform(contents)
-    terms = vectorizer.get_feature_names_out()
-    
-    labels = []
-    for i in range(n_clusters):
-        cluster_center = X[clusters == i].mean(axis=0).A.flatten()
-        sorted_indices = cluster_center.argsort()[::-1]
-        top_terms = [terms[idx] for idx in sorted_indices[:5]]
-        labels.append(' '.join(top_terms))
-    
-    return labels
-
 def save_results_to_redis(crawl_id, documents, clusters, labels):
+    """Sauvegarde des résultats dans Redis avec gestion des outliers."""
     for i, doc in enumerate(documents):
         doc_id = doc["doc_id"]
-        r.hset(doc_id, "cluster", int(clusters[i]))
-        r.hset(doc_id, "label", labels[clusters[i]])
+        cluster_id = int(clusters[i])
+        label = labels.get(cluster_id, "Non classé")
+        r.hset(doc_id, mapping={
+            "cluster": cluster_id,
+            "label": label
+        })
 
 def create_display_label(url):
     """Crée un label d'affichage lisible à partir d'une URL."""
@@ -255,43 +234,213 @@ def convert_to_serializable(obj):
         return int(obj)
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
+def get_ddev_url():
+    """Récupère l'URL DDEV du projet."""
+    try:
+        cmd = "ddev describe -j | jq -r '.raw.name'"
+        project_name = subprocess.check_output(cmd, shell=True).decode('utf-8').strip()
+        return f"https://{project_name}.ddev.site"
+    except Exception as e:
+        logging.error(f"Erreur lors de la récupération de l'URL DDEV: {e}")
+        return "http://localhost"
+
+
+
+class SemanticAnalyzer:
+    def __init__(self):
+        # Charger CamemBERT
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            self.tokenizer = CamembertTokenizer.from_pretrained('camembert-base')
+            self.model = CamembertModel.from_pretrained('camembert-base')
+        self.model.eval()
+        
+        # Préparer les stop words comme une liste
+        try:
+            nltk.download('stopwords', quiet=True)
+            self.french_stop_words = list(stopwords.words('french'))
+        except Exception as e:
+            logging.warning(f"Erreur lors du chargement des stop words: {e}")
+            self.french_stop_words = None
+
+        
+    def compute_embeddings(self, texts, batch_size=8):
+        """Génère des embeddings par lots pour optimiser la mémoire."""
+        all_embeddings = []
+        
+        for i in range(0, len(texts), batch_size):
+            batch_texts = texts[i:i + batch_size]
+            inputs = self.tokenizer(batch_texts, padding=True, truncation=True, 
+                                  max_length=512, return_tensors='pt')
+            
+            with torch.no_grad():
+                outputs = self.model(**inputs)
+                embeddings = outputs.last_hidden_state.mean(dim=1)
+                all_embeddings.append(embeddings.numpy())
+                
+        return np.vstack(all_embeddings)
+    
+
+    def cluster_documents(self, embeddings):
+        """Clustering optimisé avec DBSCAN."""
+        scaler = StandardScaler()
+        embeddings_scaled = scaler.fit_transform(embeddings)
+        
+        best_silhouette = -1
+        best_labels = None
+        best_eps = None
+        best_outliers_ratio = 1.0
+        
+        # Ajuster les paramètres pour avoir plus de clusters
+        distances = np.linalg.norm(embeddings_scaled[:, None] - embeddings_scaled, axis=2)
+        eps_range = np.percentile(distances, [5, 10, 15, 20, 25, 30])
+        
+        logging.info("Début de la recherche des meilleurs paramètres de clustering...")
+        
+        for eps in eps_range:
+            dbscan = DBSCAN(eps=eps, min_samples=2)
+            labels = dbscan.fit_predict(embeddings_scaled)
+            
+            n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+            outliers_count = np.sum(labels == -1)
+            outliers_ratio = outliers_count / len(labels)
+            
+            logging.info(f"""
+            Test avec eps={eps:.3f}:
+            - Nombre de clusters: {n_clusters}
+            - Outliers: {outliers_count}/{len(labels)} ({outliers_ratio*100:.1f}%)
+            """)
+            
+            if n_clusters >= 2:  # On veut au moins 2 clusters
+                mask = labels != -1
+                if np.sum(mask) > 1:
+                    score = silhouette_score(embeddings_scaled[mask], labels[mask])
+                    logging.info(f"- Score silhouette: {score:.3f}")
+                    
+                    # Favoriser les solutions avec plus de clusters et moins d'outliers
+                    current_score = score * (1 - outliers_ratio) * (n_clusters / 10)  
+                    
+                    if current_score > best_silhouette:
+                        best_silhouette = current_score
+                        best_labels = labels
+                        best_eps = eps
+                        best_outliers_ratio = outliers_ratio
+        
+        if best_labels is None:
+            logging.warning("Pas de clustering optimal trouvé, utilisation de paramètres par défaut")
+            # Utiliser des paramètres plus stricts pour forcer plus de clusters
+            dbscan = DBSCAN(eps=0.3, min_samples=2)
+            best_labels = dbscan.fit_predict(embeddings_scaled)
+            best_eps = 0.3
+            best_outliers_ratio = np.sum(best_labels == -1) / len(best_labels)
+
+        # Résumé final
+        n_clusters = len(set(best_labels)) - (1 if -1 in best_labels else 0)
+        cluster_counts = {i: np.sum(best_labels == i) for i in set(best_labels)}
+        cluster_info = "\n".join([f"Cluster {k}: {v} documents" for k, v in cluster_counts.items()])
+        
+        logging.info(f"""
+        Meilleurs paramètres trouvés:
+        - Epsilon: {best_eps:.3f}
+        - Score silhouette ajusté: {best_silhouette:.3f}
+        - Nombre de clusters: {n_clusters}
+        - Ratio d'outliers: {best_outliers_ratio*100:.1f}%
+        
+        Distribution des clusters:
+        {cluster_info}
+        """)
+        
+        return best_labels
+
+    def extract_topics(self, texts, labels):
+        """Extraction des thèmes avec gestion appropriée des stop words."""
+        try:
+            # Configuration du vectorizer avec stop_words comme liste ou None
+            vectorizer = TfidfVectorizer(
+                max_features=1000,
+                ngram_range=(1, 2),
+                stop_words=self.french_stop_words if self.french_stop_words else None
+            )
+            
+            tfidf_matrix = vectorizer.fit_transform(texts)
+            feature_names = vectorizer.get_feature_names_out()
+            
+            topics = {}
+            unique_labels = set(labels[labels != -1])
+            
+            for label in unique_labels:
+                cluster_docs = tfidf_matrix[labels == label]
+                avg_tfidf = cluster_docs.mean(axis=0).A1
+                
+                # Sélectionner les termes les plus pertinents
+                top_indices = avg_tfidf.argsort()[-5:][::-1]
+                topics[int(label)] = ' '.join([feature_names[i] for i in top_indices])
+            
+            # Étiquette pour les outliers
+            if -1 in labels:
+                topics[-1] = "Contenu non classé"
+            
+            return topics
+            
+        except Exception as e:
+            logging.error(f"Erreur lors de l'extraction des thèmes: {e}")
+            # Fallback sur des étiquettes simples
+            unique_labels = set(labels)
+            return {label: f"Cluster {label}" for label in unique_labels}
+
+
+
 def main():
     if len(sys.argv) < 2:
         logging.error("Usage: python3 02_analyse.py <crawl_id>")
         return
     
-    crawl_id = sys.argv[1]
-    documents = get_documents_from_redis(crawl_id)
-    
-    if not documents:
-        logging.error("No documents found for the given crawl ID.")
-        return
-    
-    logging.info(f"Number of documents: {len(documents)}")
-    
-    contents = [doc["content"] for doc in documents]
-    
-    logging.info("Computing embeddings...")
-    embeddings = compute_embeddings(contents)
-    logging.info(f"Shape of embeddings: {embeddings.shape}")
-    
-    n_clusters = min(5, len(documents) - 1)
-    logging.info(f"Clustering embeddings with {n_clusters} clusters...")
-    clusters, kmeans = cluster_embeddings(embeddings, n_clusters=n_clusters)
-    
-    logging.info("Reducing dimensions for visualization...")
-    reduced_embeddings = reduce_dimensions(embeddings)
-    
-    logging.info("Determining cluster labels...")
-    labels = determine_cluster_labels(contents, clusters, n_clusters=n_clusters)
-    
-    logging.info("Saving results to Redis...")
-    save_results_to_redis(crawl_id, documents, clusters, labels)
-    
-    logging.info("Saving network graph to Redis and JSON files...")
-    save_graph_to_redis(crawl_id, documents, clusters, labels)
-
-    logging.info("Analysis completed successfully.")
+    try:
+        crawl_id = sys.argv[1]
+        documents = get_documents_from_redis(crawl_id)
+        
+        if not documents:
+            logging.error("No documents found for the given crawl ID.")
+            return
+        
+        logging.info(f"Analyse de {len(documents)} documents...")
+        
+        analyzer = SemanticAnalyzer()
+        contents = [doc["content"] for doc in documents]
+        
+        logging.info("Génération des embeddings avec CamemBERT...")
+        embeddings = analyzer.compute_embeddings(contents)
+        
+        logging.info("Clustering des documents...")
+        clusters = analyzer.cluster_documents(embeddings)
+        
+        logging.info("Extraction des thèmes...")
+        topics = analyzer.extract_topics(contents, clusters)
+        
+        logging.info("Sauvegarde des résultats...")
+        save_results_to_redis(crawl_id, documents, clusters, topics)
+        save_graph_to_redis(crawl_id, documents, clusters, topics)
+        
+        # Message final avec statistiques et URL
+        n_clusters = len(set(clusters)) - (1 if -1 in clusters else 0)
+        n_outliers = sum(clusters == -1)
+        ddev_url = get_ddev_url()
+        
+        logging.info(f"""
+        ✅ Analyse terminée avec succès:
+        - Nombre de clusters: {n_clusters}
+        - Documents non classés: {n_outliers}
+        - Thèmes principaux: {topics}
+        
+        🌐 Pour visualiser les résultats:
+        1. Ouvrez votre navigateur
+        2. Accédez au tableau de bord: {ddev_url}/dashboard.html
+        3. Sélectionnez le crawl avec l'ID: {crawl_id}
+        """)
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de l'analyse: {str(e)}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

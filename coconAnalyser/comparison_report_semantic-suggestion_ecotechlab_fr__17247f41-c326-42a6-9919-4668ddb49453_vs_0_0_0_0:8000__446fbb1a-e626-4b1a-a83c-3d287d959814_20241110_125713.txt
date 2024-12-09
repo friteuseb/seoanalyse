@@ -1,0 +1,59 @@
+
+=== ANALYSE COMPARATIVE DU MAILLAGE INTERNE ===
+
+📊 ÉVOLUTION GLOBALE
+AVANT :
+• 23 pages
+• 37 liens internes
+• 0.073 densité moyenne
+• 5 clusters
+• 0 liens bilingues
+
+APRÈS :
+• 23 pages
+• 121 liens internes
+• 0.239 densité moyenne
+• 5 clusters
+• 3 liens bilingues
+
+🔗 QUALITÉ DU MAILLAGE
+• Clustering moyen: 0.53 (↑ +31.5%)
+  ℹ️  Mesure de la cohésion des groupes de pages
+• Réciprocité: 0.83 (→ +1.9%)
+  ℹ️  Proportion de liens bidirectionnels
+• Densité: 0.24 (↑↑ +227.0%)
+  ℹ️  Proportion de liens réalisés vs possibles
+• Liens thématiques: 51.00 (↑ +64.5%)
+  ℹ️  Liens entre pages de même thème
+• Liens inter-thèmes: 67.00 (↑↑ >1000%)
+  ℹ️  Liens entre thèmes différents
+
+🎯 ACCESSIBILITÉ DU CONTENU
+• Pages à 3 clics: 1.00 (→ +0.0%)
+  ℹ️  Part du contenu facilement accessible
+• Profondeur moyenne: 1.27 (→ +26.7%)
+  ℹ️  Nombre moyen de clics nécessaires
+• Distribution PageRank: 4.20 (→ +2.5%)
+  ℹ️  Équilibre de l'autorité des pages
+• Profondeur maximale: 2.00 (→ +0.0%)
+  ℹ️  Nombre maximal de clics nécessaires
+
+📚 STRUCTURE DES CLUSTERS
+• Nombre de clusters: 5.00 (→ +0.0%)
+  ℹ️  Nombre de thématiques distinctes
+• Taille moyenne: 4.00 (→ -13.0%)
+  ℹ️  Pages par thématique
+• Densité interne: 0.78 (↑↑ +196.2%)
+  ℹ️  Cohésion au sein des thématiques
+• Liens inter-clusters: 67.00 (↑↑ >1000%)
+  ℹ️  Connexions entre thématiques
+
+📋 SYNTHÈSE ET RECOMMANDATIONS
+
+✅ Points forts :
+• Densité du maillage améliorée de 227.0%
+• Liens thématiques multipliés par 1.6
+• Cohésion des groupes améliorée de 31.5%
+
+💡 Recommandations prioritaires :
+• Équilibrer la taille des clusters thématiques

@@ -8,14 +8,26 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSortOrder = 'asc';
 
     const colorList = [
-        "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
-        "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
+        "#1f77b4", // bleu
+        "#ff7f0e", // orange
+        "#2ca02c", // vert
+        "#d62728", // rouge
+        "#9467bd", // violet
+        "#8c564b", // marron
+        "#e377c2", // rose
+        "#7f7f7f", // gris
+        "#bcbd22", // olive
+        "#17becf"  // cyan
     ];
-
+    
     function getColor(group) {
+        // S'assurer qu'un groupe undefined ou -1 reçoit une couleur par défaut
+        if (group === undefined || group < 0) {
+            return "#7f7f7f"; // couleur par défaut pour les outliers
+        }
         return colorList[group % colorList.length];
     }
-
+    
     fetch('get_available_graphs.php')
         .then(response => response.json())
         .then(graphs => {

@@ -26,3 +26,7 @@ redis==5.0.5
 termcolor==2.2.0
 tabulate
 
+
+# Fonctionnement avec API 
+python-dotenv 
+anthropic

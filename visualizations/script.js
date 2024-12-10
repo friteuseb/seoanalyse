@@ -8,26 +8,20 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSortOrder = 'asc';
 
     const colorList = [
-        "#1f77b4", // bleu
-        "#ff7f0e", // orange
-        "#2ca02c", // vert
-        "#d62728", // rouge
-        "#9467bd", // violet
-        "#8c564b", // marron
-        "#e377c2", // rose
-        "#7f7f7f", // gris
-        "#bcbd22", // olive
-        "#17becf"  // cyan
+        "#2D7DD2",  // Bleu plus intense
+        "#EEB902",  // Orange/Jaune
+        "#97CC04",  // Vert vif
+        "#F45D01",  // Orange brûlé
+        "#474647"   // Gris pour les non classés
     ];
     
     function getColor(group) {
-        // S'assurer qu'un groupe undefined ou -1 reçoit une couleur par défaut
-        if (group === undefined || group < 0) {
-            return "#7f7f7f"; // couleur par défaut pour les outliers
+        if (group === undefined || group === -1) {
+            return colorList[4];  // Gris pour les non classés
         }
         return colorList[group % colorList.length];
     }
-    
+
     fetch('get_available_graphs.php')
         .then(response => response.json())
         .then(graphs => {
@@ -177,6 +171,16 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr("dy", ".35em")
             .attr("class", "node-text")
             .text(d => d.label);
+        
+        //Tooltip de description du clustering
+        node.append("title")
+        .text(d => {
+            let tooltip = `URL: ${d.label}\n`;
+            tooltip += `Cluster: ${d.group}\n`;
+            tooltip += `Description: ${d.title}\n`;
+            tooltip += `Liens: ${d.internal_links_count}`;
+            return tooltip;
+        });
     
         simulation.on("tick", () => {
             link
@@ -219,88 +223,99 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     
         const legend = svg.append("g")
-            .attr("class", "legend")
-            .attr("transform", `translate(${width - 200}, 20)`);
+        .attr("class", "legend")
+        .attr("transform", `translate(${width - 250}, 20)`);
     
-        const labels = {};
+        // Grouper les nœuds par cluster
+        const clusters = {};
         data.nodes.forEach(node => {
-            if (!labels[node.group]) {
-                labels[node.group] = node.title;
+            if (!clusters[node.group]) {
+                clusters[node.group] = {
+                    color: getColor(node.group),
+                    title: node.title,
+                    count: 1
+                };
+            } else {
+                clusters[node.group].count++;
             }
         });
     
-        Object.entries(labels).forEach(([group, label], i) => {
+        // Créer la légende
+        Object.entries(clusters).forEach(([group, info], i) => {
             const legendRow = legend.append("g")
-                .attr("transform", `translate(0, ${i * 20})`);
-    
-            legendRow.append("rect")
-                .attr("width", 10)
-                .attr("height", 10)
-                .attr("fill", getColor(group));
-    
-            legendRow.append("text")
-                .attr("x", 20)
-                .attr("y", 10)
-                .attr("text-anchor", "start")
-                .text(label)
-                .attr("fill", getColor(group));
-        });
-    }
-    
-    
-    
+                .attr("transform", `translate(0, ${i * 50})`);  // Plus d'espace entre les entrées
 
-    function populateTable(nodes, links) {
-        console.log("Nodes:", nodes);
-        console.log("Links:", links);
-    
-        const tableBody = document.querySelector('#nodesTable tbody');
-        tableBody.innerHTML = '';
-    
-        nodes.forEach(node => {
-            console.log("Processing node:", node);
-    
-            const row = document.createElement('tr');
-            row.setAttribute('data-node-id', node.id || 'undefined');
-    
-            const colorCell = document.createElement('td');
-            colorCell.style.backgroundColor = getColor(node.group || 0);
-            colorCell.style.width = '5px';
-            row.appendChild(colorCell);
-    
-            const nodeNameCell = document.createElement('td');
-            nodeNameCell.textContent = node.label || node.id || 'Unnamed';
-            row.appendChild(nodeNameCell);
-    
-            const incomingLinksCount = links.filter(link => 
-                (typeof link.target === 'object' ? link.target.id : link.target) === node.id
-            ).length;
-            const outgoingLinksCount = links.filter(link => 
-                (typeof link.source === 'object' ? link.source.id : link.source) === node.id
-            ).length;
-    
-            console.log(`Node ${node.id}: Incoming links: ${incomingLinksCount}, Outgoing links: ${outgoingLinksCount}`);
-    
-            const incomingLinksCell = document.createElement('td');
-            incomingLinksCell.textContent = incomingLinksCount;
-            row.appendChild(incomingLinksCell);
-    
-            const outgoingLinksCell = document.createElement('td');
-            outgoingLinksCell.textContent = outgoingLinksCount;
-            row.appendChild(outgoingLinksCell);
-    
-            const actionsCell = document.createElement('td');
-            const deleteButton = document.createElement('button');
-            deleteButton.textContent = 'Supprimer';
-            deleteButton.addEventListener('click', () => {
-                removeNode(node);
-            });
-            actionsCell.appendChild(deleteButton);
-            row.appendChild(actionsCell);
-    
-            tableBody.appendChild(row);
+            // Carré de couleur
+            legendRow.append("rect")
+                .attr("width", 20)
+                .attr("height", 20)
+                .attr("fill", info.color);
+
+            // Description du cluster
+            legendRow.append("text")
+                .attr("x", 30)
+                .attr("y", 10)
+                .attr("dy", "0.32em")
+                .attr("class", "legend-text")
+                .text(`Cluster ${group} (${info.count} pages)`);
+
+            // Description en dessous
+            legendRow.append("text")
+                .attr("x", 30)
+                .attr("y", 30)
+                .attr("dy", "0.32em")
+                .attr("class", "legend-description")
+                .style("font-size", "0.8em")
+                .text(info.title.length > 60 ? info.title.substring(0, 57) + "..." : info.title);
         });
-    }
+            
+    
+    
+    function populateTable(nodes, links) {
+            const tableBody = document.querySelector('#nodesTable tbody');
+            tableBody.innerHTML = '';
+    
+            nodes.forEach(node => {
+                const row = document.createElement('tr');
+                row.setAttribute('data-node-id', node.id || 'undefined');
+    
+                const colorCell = document.createElement('td');
+                colorCell.style.backgroundColor = getColor(node.group || 0);
+                colorCell.style.width = '5px';
+                row.appendChild(colorCell);
+    
+                const nodeNameCell = document.createElement('td');
+                nodeNameCell.textContent = node.label || node.id || 'Unnamed';
+                row.appendChild(nodeNameCell);
+    
+                const incomingLinksCount = links.filter(link => 
+                    (typeof link.target === 'object' ? link.target.id : link.target) === node.id
+                ).length;
+                const outgoingLinksCount = links.filter(link => 
+                    (typeof link.source === 'object' ? link.source.id : link.source) === node.id
+                ).length;
+    
+                const incomingLinksCell = document.createElement('td');
+                incomingLinksCell.textContent = incomingLinksCount;
+                row.appendChild(incomingLinksCell);
+    
+                const outgoingLinksCell = document.createElement('td');
+                outgoingLinksCell.textContent = outgoingLinksCount;
+                row.appendChild(outgoingLinksCell);
+    
+                const actionsCell = document.createElement('td');
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Supprimer';
+                deleteButton.addEventListener('click', () => {
+                    removeNode(node);
+                });
+                actionsCell.appendChild(deleteButton);
+                row.appendChild(actionsCell);
+    
+                tableBody.appendChild(row);
+            });
+        }
+    
    
     function removeNode(d) {
         const index = graphData.nodes.findIndex(node => node.id === d.id);
@@ -344,23 +359,34 @@ document.addEventListener('DOMContentLoaded', () => {
     
 
     function addTableSorting() {
-        const headers = document.querySelectorAll('#nodesTable th');
+        const table = document.querySelector('#nodesTable');
+        if (!table) {
+            console.error('Table #nodesTable not found!');
+            return;
+        }
+
+        const headers = table.querySelectorAll('th');
+        if (headers.length === 0) {
+            console.error('No headers <th> found in #nodesTable!');
+            return;
+        }
+
         headers.forEach((header, index) => {
             header.addEventListener('click', () => {
-                const table = header.closest('table');
                 currentSortOrder = header.classList.contains('asc') ? 'desc' : 'asc';
                 currentSortColumn = index;
-    
+
                 headers.forEach(h => {
                     h.classList.remove('asc', 'desc');
                 });
-    
+
                 header.classList.add(currentSortOrder);
-    
+
                 sortTable(currentSortColumn, currentSortOrder);
             });
         });
     }
 
-    addTableSorting();
-});
+
+    addTableSorting(); // Appel de la fonction pour ajouter le tri aux colonnes
+}); 

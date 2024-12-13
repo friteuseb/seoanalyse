@@ -12,7 +12,7 @@ import anthropic
 import torch
 from dotenv import load_dotenv
 from transformers import CamembertModel, CamembertTokenizer
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN, KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
@@ -84,7 +84,7 @@ class SemanticAnalyzer:
         return np.vstack(all_embeddings)
 
     def cluster_documents(self, embeddings):
-        """Clustering optimisé avec DBSCAN."""
+        """Clustering optimisé avec DBSCAN et gestion des cas limites."""
         scaler = StandardScaler()
         embeddings_scaled = scaler.fit_transform(embeddings)
         
@@ -92,46 +92,59 @@ class SemanticAnalyzer:
         best_labels = None
         best_params = None
         
-        # Paramètres de recherche
+        # Calcul de la matrice des distances
         distances = np.linalg.norm(embeddings_scaled[:, None] - embeddings_scaled, axis=2)
-        eps_range = np.percentile(distances, [5, 10, 15, 20, 25, 30])
+        
+        # Assurer des valeurs minimales sûres pour eps
+        min_eps = max(0.1, np.min(distances[distances > 0]))
+        eps_range = np.percentile(distances[distances > 0], [5, 10, 15, 20, 25, 30])
+        eps_range = np.append(eps_range, min_eps)  # Ajouter la valeur minimale
+        eps_range = np.unique(eps_range)  # Supprimer les doublons
+        eps_range = eps_range[eps_range > 0]  # Supprimer les valeurs nulles
+        
         min_samples_range = [2, 3, 4]
         
         logging.info("Recherche des meilleurs paramètres de clustering...")
         
         for eps in eps_range:
             for min_samples in min_samples_range:
-                labels = DBSCAN(eps=eps, min_samples=min_samples).fit_predict(embeddings_scaled)
-                n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-                outliers_ratio = np.sum(labels == -1) / len(labels)
-                
-                if n_clusters >= 2 and outliers_ratio < 0.3:
-                    mask = labels != -1
-                    if np.sum(mask) > 1:
-                        score = silhouette_score(embeddings_scaled[mask], labels[mask])
-                        current_score = score * (1 - outliers_ratio) * (n_clusters / 5)
-                        
-                        if current_score > best_score:
-                            best_score = current_score
-                            best_labels = labels
-                            best_params = {'eps': eps, 'min_samples': min_samples}
+                try:
+                    labels = DBSCAN(eps=eps, min_samples=min_samples).fit_predict(embeddings_scaled)
+                    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+                    outliers_ratio = np.sum(labels == -1) / len(labels)
+                    
+                    if n_clusters >= 2 and outliers_ratio < 0.3:
+                        mask = labels != -1
+                        if np.sum(mask) > 1:
+                            score = silhouette_score(embeddings_scaled[mask], labels[mask])
+                            current_score = score * (1 - outliers_ratio) * (n_clusters / 5)
                             
-                            logging.info(f"""
-                            Nouvelle meilleure configuration:
-                            - Epsilon: {eps:.3f}
-                            - Min samples: {min_samples}
-                            - Clusters: {n_clusters}
-                            - Outliers: {outliers_ratio*100:.1f}%
-                            - Score: {current_score:.3f}
-                            """)
+                            if current_score > best_score:
+                                best_score = current_score
+                                best_labels = labels
+                                best_params = {'eps': eps, 'min_samples': min_samples}
+                                
+                                logging.info(f"""
+                                Nouvelle meilleure configuration:
+                                - Epsilon: {eps:.3f}
+                                - Min samples: {min_samples}
+                                - Clusters: {n_clusters}
+                                - Outliers: {outliers_ratio*100:.1f}%
+                                - Score: {current_score:.3f}
+                                """)
+                except Exception as e:
+                    logging.debug(f"Échec configuration eps={eps}, min_samples={min_samples}: {str(e)}")
+                    continue
         
+        # Si aucune bonne configuration n'est trouvée, utiliser KMeans comme fallback
         if best_labels is None:
-            logging.warning("Utilisation des paramètres par défaut")
-            best_labels = DBSCAN(eps=0.3, min_samples=2).fit_predict(embeddings_scaled)
-            best_params = {'eps': 0.3, 'min_samples': 2}
+            logging.warning("DBSCAN échoué, utilisation de KMeans comme fallback")
+            n_clusters = min(5, len(embeddings))
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+            best_labels = kmeans.fit_predict(embeddings_scaled)
+            best_params = {'method': 'kmeans', 'n_clusters': n_clusters}
         
         return best_labels, best_params
-
 
     # 1. Corriger la méthode d'appel à l'API Anthropic
     async def enrich_cluster_with_llm(self, cluster_summary):

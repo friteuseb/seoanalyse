@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let isClustered = false;
     let currentSortColumn = null;
     let currentSortOrder = 'asc';
+    let svg; 
+
 
     const colorList = [
         "#2D7DD2",  // Bleu plus intense
@@ -127,7 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr("fill", "#999")
             .style("stroke", "none");
     
-        // Dessin des liens en premier
         const link = g.append("g")
             .attr("class", "links")
             .selectAll("line")
@@ -136,15 +137,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr("stroke", "#999")
             .attr("stroke-opacity", 0.6)
             .attr("stroke-width", d => Math.sqrt(d.value))
-            .attr("marker-end", "url(#arrowhead)");  // Ajouter la flèche au bout du lien
+            .attr("marker-end", "url(#arrowhead)");
     
-        // Calcul du nombre de liens entrants pour chaque nœud
         const incomingLinksCount = {};
         data.links.forEach(link => {
             incomingLinksCount[link.target.id] = (incomingLinksCount[link.target.id] || 0) + 1;
         });
     
-        // Dessin des nœuds après les liens
         const node = g.append("g")
             .attr("class", "nodes")
             .selectAll("g")
@@ -160,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     
         node.append("circle")
-            .attr("r", d => 5 + Math.sqrt(incomingLinksCount[d.id] || 1) * 3)  // Ajuster la taille en fonction des liens entrants
+            .attr("r", d => 5 + Math.sqrt(incomingLinksCount[d.id] || 1) * 3)
             .attr("fill", d => getColor(d.group));
     
         node.append("title")
@@ -171,16 +170,15 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr("dy", ".35em")
             .attr("class", "node-text")
             .text(d => d.label);
-        
-        //Tooltip de description du clustering
+    
         node.append("title")
-        .text(d => {
-            let tooltip = `URL: ${d.label}\n`;
-            tooltip += `Cluster: ${d.group}\n`;
-            tooltip += `Description: ${d.title}\n`;
-            tooltip += `Liens: ${d.internal_links_count}`;
-            return tooltip;
-        });
+            .text(d => {
+                let tooltip = `URL: ${d.label}\n`;
+                tooltip += `Cluster: ${d.group}\n`;
+                tooltip += `Description: ${d.title}\n`;
+                tooltip += `Liens: ${d.internal_links_count}`;
+                return tooltip;
+            });
     
         simulation.on("tick", () => {
             link
@@ -190,20 +188,80 @@ document.addEventListener('DOMContentLoaded', () => {
                     const dx = d.target.x - d.source.x;
                     const dy = d.target.y - d.source.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
-                    const radius = 5 + Math.sqrt(incomingLinksCount[d.target.id] || 1) * 3; // Calcul du rayon cible
+                    const radius = 5 + Math.sqrt(incomingLinksCount[d.target.id] || 1) * 3;
                     return d.target.x - (dx * radius) / distance;
                 })
                 .attr("y2", d => {
                     const dx = d.target.x - d.source.x;
                     const dy = d.target.y - d.source.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
-                    const radius = 5 + Math.sqrt(incomingLinksCount[d.target.id] || 1) * 3; // Calcul du rayon cible
+                    const radius = 5 + Math.sqrt(incomingLinksCount[d.target.id] || 1) * 3;
                     return d.target.y - (dy * radius) / distance;
                 });
     
             node
                 .attr("transform", d => `translate(${d.x},${d.y})`);
         });
+    
+        function dragstarted(event) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            event.subject.fx = event.subject.x;
+            event.subject.fy = event.subject.y;
+        }
+    
+        function dragged(event) {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;
+        }
+    
+        function dragended(event) {
+            if (!event.active) simulation.alphaTarget(0);
+            event.subject.fx = null;
+            event.subject.fy = null;
+        }
+    
+        const legend = svg.append("g")
+            .attr("class", "legend")
+            .attr("transform", `translate(${width - 250}, 20)`);
+    
+        const clusters = {};
+        data.nodes.forEach(node => {
+            if (!clusters[node.group]) {
+                clusters[node.group] = {
+                    color: getColor(node.group),
+                    title: node.title,
+                    count: 1
+                };
+            } else {
+                clusters[node.group].count++;
+            }
+        });
+    
+        Object.entries(clusters).forEach(([group, info], i) => {
+            const legendRow = legend.append("g")
+                .attr("transform", `translate(0, ${i * 50})`);
+    
+            legendRow.append("rect")
+                .attr("width", 20)
+                .attr("height", 20)
+                .attr("fill", info.color);
+    
+            legendRow.append("text")
+                .attr("x", 30)
+                .attr("y", 10)
+                .attr("dy", "0.32em")
+                .attr("class", "legend-text")
+                .text(`Cluster ${group} (${info.count} pages)`);
+    
+            legendRow.append("text")
+                .attr("x", 30)
+                .attr("y", 30)
+                .attr("dy", "0.32em")
+                .attr("class", "legend-description")
+                .style("font-size", "0.8em")
+                .text(info.title.length > 60 ? info.title.substring(0, 57) + "..." : info.title);
+        });
+    }
     
         function dragstarted(event) {
             if (!event.active) simulation.alphaTarget(0.3).restart();

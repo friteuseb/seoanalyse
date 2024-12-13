@@ -1,8 +1,6 @@
 <?php
+require_once 'redis_config.php';
 header('Content-Type: application/json');
-
-$redis = new Redis();
-$redis->connect('redis', 6379);
 
 $graph = $_GET['graph'] ?? '';
 
@@ -11,6 +9,7 @@ if (empty($graph)) {
     exit;
 }
 
+$redis = get_redis_connection();
 $data = $redis->get($graph);
 
 if ($data === false) {

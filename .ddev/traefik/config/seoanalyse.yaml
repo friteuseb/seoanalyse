@@ -1,77 +1,100 @@
 #ddev-generated
-# If you remove the ddev-generated line above you
-# are responsible for maintaining this file. DDEV will not then
-# update it, for example if you add `additional_hostnames`, etc.
 
 http:
   routers:
+    
+    
     seoanalyse-web-80-http:
-      entrypoints:
-        - http-80
-      rule: HostRegexp(`^seoanalyse\.ddev\.site$`)
       
-      service: "seoanalyse-web-80"
-      ruleSyntax: v3
+      rule: HostRegexp(`seoanalyse.ddev.site`)
+      
+      middlewares:
+        - autodetect
+      service: "seoanalyse-web-80-http"
       tls: false
-      # middlewares:
-      #   - "seoanalyse-redirectHttps"
+      entrypoints:
+        - http-8383
+    
+    
     seoanalyse-web-8025-http:
+      
+      rule: HostRegexp(`seoanalyse.ddev.site`)
+      
+      middlewares:
+        - autodetect
+      service: "seoanalyse-web-8025-http"
+      tls: false
       entrypoints:
         - http-8025
-      rule: HostRegexp(`^seoanalyse\.ddev\.site$`)
-      
-      service: "seoanalyse-web-8025"
-      ruleSyntax: v3
-      tls: false
-      # middlewares:
-      #   - "seoanalyse-redirectHttps"
+    
+    
+    
     
     
     
     seoanalyse-web-80-https:
-      entrypoints:
-        - http-443
-      rule: HostRegexp(`^seoanalyse\.ddev\.site$`)
       
-      service: "seoanalyse-web-80"
-      ruleSyntax: v3
+      rule: HostRegexp(`seoanalyse.ddev.site`)
+      
+      middlewares:
+        - autodetect
+      service: "seoanalyse-web-80-https"
       
       tls: true
       
+      entrypoints:
+        - http-8843
+    
+    
     seoanalyse-web-8025-https:
+      
+      rule: HostRegexp(`seoanalyse.ddev.site`)
+      
+      middlewares:
+        - autodetect
+      service: "seoanalyse-web-8025-https"
+      
+      tls: true
+      
       entrypoints:
         - http-8026
-      rule: HostRegexp(`^seoanalyse\.ddev\.site$`)
-      
-      service: "seoanalyse-web-8025"
-      ruleSyntax: v3
-      
-      tls: true
-      
+    
     
 
+  # autodetect won't be needed in Traefik 3 https://github.com/traefik/traefik/pull/9546
   middlewares:
-    seoanalyse-redirectHttps:
-      redirectScheme:
-        scheme: https
-        permanent: true
+    autodetect:
+      contentType:
+        autoDetect: false
 
   services:
-    seoanalyse-web-80:
+    
+    seoanalyse-web-80-http:
       loadbalancer:
         servers:
           - url: http://ddev-seoanalyse-web:80
-        
-    seoanalyse-web-8025:
+    
+    seoanalyse-web-8025-http:
       loadbalancer:
         servers:
           - url: http://ddev-seoanalyse-web:8025
-        
     
+    seoanalyse-web-80-https:
     
+      loadbalancer:
+        servers:
+          - url: http://ddev-seoanalyse-web:80
     
+    seoanalyse-web-8025-https:
+    
+      loadbalancer:
+        servers:
+          - url: http://ddev-seoanalyse-web:8025
+    
+
 
 tls:
   certificates:
     - certFile: /mnt/ddev-global-cache/traefik/certs/seoanalyse.crt
       keyFile: /mnt/ddev-global-cache/traefik/certs/seoanalyse.key
+

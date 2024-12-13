@@ -1,9 +1,27 @@
 <?php
 header('Content-Type: application/json');
 
-$redis = new Redis();
-$redis->connect('redis', 6379);
+try {
+    // Récupération des paramètres Redis
+    $host = getenv('REDIS_HOST') ?: 'localhost';
+    $port = getenv('REDIS_PORT') ?: 6379;
 
-$keys = $redis->keys('*_graph');
+    // Si exécuté à l'extérieur du conteneur, utiliser les variables EXTERNAL_*
+    if (getenv('DDEV_HOSTNAME') === false) {
+        $host = getenv('EXTERNAL_REDIS_HOST') ?: 'localhost';
+        $port = getenv('EXTERNAL_REDIS_PORT') ?: 6379;
+    }
 
-echo json_encode($keys);
+    // Connexion à Redis
+    $redis = new Redis();
+    $redis->connect($host, intval($port));
+
+    // Récupération des données
+    $graphs = $redis->keys('*');
+    echo json_encode($graphs);
+
+} catch (Exception $e) {
+    echo json_encode(['error' => 'Redis connection failed: ' . $e->getMessage()]);
+    exit;
+}
+?>

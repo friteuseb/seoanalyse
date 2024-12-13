@@ -1,15 +1,7 @@
 <?php
-$redis = new Redis();
-try {
-    $redis->connect('redis', 6379);
-    echo "Connection to server successful\n";
-    
-    // Set the data in redis string
-    $redis->set("key", "value");
-    // Get the stored data and print it
-    $value = $redis->get("key");
-    echo "La valeur de 'key' est : " . $value;
-} catch (Exception $e) {
-    echo "Failed to connect to Redis: " . $e->getMessage();
-}
+require 'redis_config.php';
+
+$redis = get_redis_connection();
+$redis->set('test_key', 'test_value');
+echo json_encode(['success' => 'Redis connecté avec succès', 'value' => $redis->get('test_key')]);
 ?>

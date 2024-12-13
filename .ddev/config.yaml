@@ -15,6 +15,9 @@ corepack_enable: false
 web_environment:
   - REDIS_HOST=redis
   - REDIS_PORT=6379
+  - EXTERNAL_REDIS_HOST=localhost
+  - EXTERNAL_REDIS_PORT=32783
+
 services:
   redis:
     type: redis:6

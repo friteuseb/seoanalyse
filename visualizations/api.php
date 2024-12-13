@@ -1,31 +1,31 @@
 <?php
+require_once 'redis_config.php';
 header('Content-Type: application/json');
 
-$redis = new Redis();
-$redis->connect('redis', 6379);
+$redis = get_redis_connection();
 
 function getCrawls($redis) {
     $crawls = [];
-    foreach ($redis->keys("*:doc_count") as $key) {
-        $crawl_id = explode(':', $key)[0];
-        $count = $redis->get($key);
-        
-        // Récupérer les graphes
-        $simple_graph = $redis->get($crawl_id . "_simple_graph");
-        $clustered_graph = $redis->get($crawl_id . "_clustered_graph");
-        
-        $documents = getCrawlDocuments($redis, $crawl_id);
+    foreach ($redis->keys("*:doc:*") as $key) {
+        $doc_data = $redis->hgetall($key);
+        if (!$doc_data) continue;
+
+        $url = $doc_data[b'url'].decode('utf-8');
+        $cluster = isset($doc_data[b'cluster']) ? (int)$doc_data[b'cluster'].decode('utf-8') : 0;
+        $label = $doc_data[b'label'].decode('utf-8') ?? '';
+        $internal_links_out = json_decode($doc_data[b'internal_links_out'].decode('utf-8'), true);
         
         $crawls[] = [
-            'id' => $crawl_id,
-            'count' => $count,
-            'documents' => $documents,
-            'simple_graph' => json_decode($simple_graph, true),
-            'clustered_graph' => json_decode($clustered_graph, true)
+            'id' => $key.decode('utf-8'),
+            'url' => $url,
+            'cluster' => $cluster,
+            'label' => $label,
+            'internal_links' => $internal_links_out
         ];
     }
     return $crawls;
 }
+
 
 function getCrawlDocuments($redis, $crawl_id) {
     $documents = [];

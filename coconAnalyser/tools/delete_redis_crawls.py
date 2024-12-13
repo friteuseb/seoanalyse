@@ -73,7 +73,7 @@ def main():
     try:
         # Connexion à Redis
         # Connexion au service Redis dans DDEV
-        redis_client = redis.Redis(host="127.0.0.1", port=32772, db=0, decode_responses=False)
+        redis_client = redis.Redis(host="127.0.0.1", port=32768, db=0, decode_responses=False)
 
         # Test de connexion
         redis_client.ping()

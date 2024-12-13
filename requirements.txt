@@ -5,7 +5,7 @@ requests==2.31.0
 # Web Scraping & HTML Processing
 beautifulsoup4==4.12.3
 trafilatura==1.10.0
-lxml[html_clean]==4.9.3
+lxml>=5.2.2
 tld==0.13
 
 # Machine Learning & Data Science

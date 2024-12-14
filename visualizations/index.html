@@ -91,6 +91,34 @@
             stroke: #999;
             stroke-opacity: 0.6;
         }
+        .tooltip {
+        pointer-events: none;
+        z-index: 1000;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    
+    .filter-controls {
+        padding: 10px;
+        background: rgba(40,40,40,0.8);
+        border-radius: 5px;
+        margin-top: 10px;
+    }
+    
+    .filter-controls select,
+    .filter-controls input,
+    .filter-controls button {
+        padding: 5px;
+        margin-right: 10px;
+        background: #333;
+        color: white;
+        border: 1px solid #555;
+        border-radius: 3px;
+    }
+    
+    .filter-controls button:hover {
+        background: #444;
+        cursor: pointer;
+    }
     </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -115,6 +143,11 @@
             </tbody>
         </table>
     </div>
-    <script src="script.js" defer></script>
+    <script src="js/config.js"></script>
+    <script src="js/graphUtils.js"></script>
+    <script src="js/tooltips.js"></script>
+    <script src="js/filters.js"></script>
+    <script src="js/graphRenderer.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>

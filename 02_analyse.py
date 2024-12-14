@@ -10,9 +10,10 @@ import asyncio
 import subprocess
 import anthropic
 import torch
+import traceback
 from dotenv import load_dotenv
 from transformers import CamembertModel, CamembertTokenizer
-from sklearn.cluster import DBSCAN, KMeans
+from sklearn.cluster import DBSCAN
 from sklearn.metrics import silhouette_score
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
@@ -83,41 +84,56 @@ class SemanticAnalyzer:
         
         return np.vstack(all_embeddings)
 
+
     def cluster_documents(self, embeddings):
         """Clustering optimisé avec DBSCAN et gestion des cas limites."""
-        scaler = StandardScaler()
-        embeddings_scaled = scaler.fit_transform(embeddings)
-        
-        best_score = -1
-        best_labels = None
-        best_params = None
-        
-        # Calcul de la matrice des distances
-        distances = np.linalg.norm(embeddings_scaled[:, None] - embeddings_scaled, axis=2)
-        
-        # Assurer des valeurs minimales sûres pour eps
-        min_eps = max(0.1, np.min(distances[distances > 0]))
-        eps_range = np.percentile(distances[distances > 0], [5, 10, 15, 20, 25, 30])
-        eps_range = np.append(eps_range, min_eps)  # Ajouter la valeur minimale
-        eps_range = np.unique(eps_range)  # Supprimer les doublons
-        eps_range = eps_range[eps_range > 0]  # Supprimer les valeurs nulles
-        
-        min_samples_range = [2, 3, 4]
-        
-        logging.info("Recherche des meilleurs paramètres de clustering...")
-        
-        for eps in eps_range:
-            for min_samples in min_samples_range:
-                try:
-                    labels = DBSCAN(eps=eps, min_samples=min_samples).fit_predict(embeddings_scaled)
-                    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-                    outliers_ratio = np.sum(labels == -1) / len(labels)
-                    
-                    if n_clusters >= 2 and outliers_ratio < 0.3:
+        try:
+            scaler = StandardScaler()
+            embeddings_scaled = scaler.fit_transform(embeddings)
+            
+            # Calcul de la matrice des distances avec plus de précautions
+            distances = np.linalg.norm(embeddings_scaled[:, None] - embeddings_scaled, axis=2)
+            
+            # Calcul plus robuste des valeurs d'eps
+            distance_matrix = distances[~np.eye(distances.shape[0], dtype=bool)]
+            if len(distance_matrix) == 0:
+                logging.warning("Pas assez de données pour le clustering DBSCAN")
+                return np.zeros(len(embeddings)), {'method': 'single_cluster'}
+                
+            min_dist = np.min(distance_matrix[distance_matrix > 0])
+            if min_dist <= 0 or np.isnan(min_dist):
+                min_dist = 0.1  # Valeur par défaut sûre
+                
+            # Générer une gamme d'eps plus sûre
+            percentiles = np.percentile(distance_matrix, [10, 25, 50, 75, 90])
+            eps_range = np.array([min_dist] + list(percentiles))
+            eps_range = eps_range[eps_range > 0]  # Garantir des valeurs positives
+            
+            best_score = -1
+            best_labels = None
+            best_params = None
+            
+            logging.info(f"Test de {len(eps_range)} valeurs d'eps entre {eps_range[0]:.3f} et {eps_range[-1]:.3f}")
+            
+            for eps in eps_range:
+                for min_samples in [2, 3, 4]:
+                    try:
+                        dbscan = DBSCAN(eps=float(eps), min_samples=min_samples)
+                        labels = dbscan.fit_predict(embeddings_scaled)
+                        
+                        n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+                        if n_clusters < 1:
+                            continue
+                            
+                        outliers_ratio = np.sum(labels == -1) / len(labels)
+                        if outliers_ratio > 0.5:  # Plus de 50% sont des outliers
+                            continue
+                            
+                        # Calcul du score silhouette uniquement pour les points non-outliers
                         mask = labels != -1
                         if np.sum(mask) > 1:
                             score = silhouette_score(embeddings_scaled[mask], labels[mask])
-                            current_score = score * (1 - outliers_ratio) * (n_clusters / 5)
+                            current_score = score * (1 - outliers_ratio)
                             
                             if current_score > best_score:
                                 best_score = current_score
@@ -125,26 +141,32 @@ class SemanticAnalyzer:
                                 best_params = {'eps': eps, 'min_samples': min_samples}
                                 
                                 logging.info(f"""
-                                Nouvelle meilleure configuration:
+                                Meilleure configuration trouvée:
                                 - Epsilon: {eps:.3f}
                                 - Min samples: {min_samples}
                                 - Clusters: {n_clusters}
                                 - Outliers: {outliers_ratio*100:.1f}%
                                 - Score: {current_score:.3f}
                                 """)
-                except Exception as e:
-                    logging.debug(f"Échec configuration eps={eps}, min_samples={min_samples}: {str(e)}")
-                    continue
-        
-        # Si aucune bonne configuration n'est trouvée, utiliser KMeans comme fallback
-        if best_labels is None:
-            logging.warning("DBSCAN échoué, utilisation de KMeans comme fallback")
-            n_clusters = min(5, len(embeddings))
-            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-            best_labels = kmeans.fit_predict(embeddings_scaled)
-            best_params = {'method': 'kmeans', 'n_clusters': n_clusters}
-        
-        return best_labels, best_params
+                                
+                    except Exception as e:
+                        logging.debug(f"Configuration échouée (eps={eps}, min_samples={min_samples}): {str(e)}")
+                        continue
+            
+            # Fallback vers KMeans si DBSCAN échoue
+            if best_labels is None:
+                logging.warning("DBSCAN n'a pas trouvé de configuration valide, utilisation de KMeans")
+                n_clusters = min(5, len(embeddings))
+                kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+                best_labels = kmeans.fit_predict(embeddings_scaled)
+                best_params = {'method': 'kmeans', 'n_clusters': n_clusters}
+                
+            return best_labels, best_params
+            
+        except Exception as e:
+            logging.error(f"Erreur dans le clustering: {str(e)}")
+            # En cas d'erreur, retourner un cluster unique
+            return np.zeros(len(embeddings)), {'method': 'fallback_single_cluster'}
 
     # 1. Corriger la méthode d'appel à l'API Anthropic
     async def enrich_cluster_with_llm(self, cluster_summary):
@@ -260,51 +282,150 @@ def save_analysis_results(r, crawl_id, documents, labels, cluster_infos):
     logging.info(f"Résultats sauvegardés pour {len(documents)} documents dans {len(cluster_infos)} clusters")
 
 
+def convert_numpy_types(obj):
+    """Convertit les types numpy en types Python standards."""
+    if isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return obj
+
+def generate_and_save_graphs(redis_client, crawl_id, documents_list, labels):
+    """Génère et sauvegarde les graphes simple et clustered dans Redis."""
+    try:
+        # Structure commune pour les deux types de graphes
+        base_nodes = []
+        base_links = []
+        
+        # Créer un mapping des URLs vers les IDs de nœuds
+        url_to_id = {doc['url']: f"node_{i}" for i, doc in enumerate(documents_list)}
+        
+        # Générer les nœuds de base
+        for i, doc in enumerate(documents_list):
+            node = {
+                'id': url_to_id[doc['url']],
+                'label': doc['url'],
+                'internal_links_count': len(doc.get('internal_links_out', [])),
+                'group': convert_numpy_types(labels[i]),  # Conversion du type numpy
+                'title': f"Cluster {convert_numpy_types(labels[i])}"
+            }
+            base_nodes.append(node)
+            
+            # Générer les liens
+            if 'internal_links_out' in doc:
+                for target_url in doc['internal_links_out']:
+                    if target_url in url_to_id:
+                        link = {
+                            'source': url_to_id[doc['url']],
+                            'target': url_to_id[target_url],
+                            'value': 1
+                        }
+                        base_links.append(link)
+        
+        # Graphe simple (sans clustering)
+        simple_graph = {
+            'nodes': base_nodes,
+            'links': base_links
+        }
+        
+        # Graphe clustered (avec informations de cluster)
+        clustered_nodes = base_nodes.copy()
+        for node in clustered_nodes:
+            # Récupérer les informations de cluster
+            cluster_info = redis_client.get(f"{crawl_id}_cluster_info")
+            if cluster_info:
+                try:
+                    cluster_data = json.loads(cluster_info)
+                    cluster_desc = cluster_data.get(str(node['group']), {}).get('description', f"Cluster {node['group']}")
+                    node['title'] = cluster_desc
+                except json.JSONDecodeError:
+                    node['title'] = f"Cluster {node['group']}"
+        
+        clustered_graph = {
+            'nodes': clustered_nodes,
+            'links': base_links
+        }
+        
+        # Sauvegarder les graphes dans Redis avec la conversion des types numpy
+        simple_json = json.dumps(simple_graph, default=convert_numpy_types)
+        clustered_json = json.dumps(clustered_graph, default=convert_numpy_types)
+        
+        redis_client.set(f"{crawl_id}_simple_graph", simple_json)
+        redis_client.set(f"{crawl_id}_clustered_graph", clustered_json)
+        
+        logging.info(f"""
+        ✅ Graphes générés et sauvegardés avec succès:
+        - Nœuds: {len(base_nodes)}
+        - Liens: {len(base_links)}
+        - Clusters: {len(set(convert_numpy_types(label) for label in labels))}
+        """)
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de la génération des graphes: {str(e)}")
+        raise
 
 async def main():
     if len(sys.argv) < 2:
         logging.error("Usage: python3 02_analyse.py <crawl_id>")
         return
     
-    crawl_id = sys.argv[1]
-    r = get_redis_connection()
-    documents = get_documents_from_redis(r, crawl_id)
-    
-    if not documents:
-        logging.error("Aucun document trouvé")
-        return
-    
-    analyzer = SemanticAnalyzer()
-    contents = [doc["content"] for doc in documents]
-    
-    logging.info("Génération des embeddings...")
-    embeddings = analyzer.compute_embeddings(contents)
-    
-    logging.info("Clustering des documents...")
-    labels, params = analyzer.cluster_documents(embeddings)
-    
-    logging.info("Enrichissement des clusters...")
-    cluster_infos = {}
-    for cluster_id in set(labels):
-        if cluster_id == -1:
-            continue
+    try:
+        crawl_id = sys.argv[1]
+        r = get_redis_connection()
+        documents = get_documents_from_redis(r, crawl_id)
         
-        summary = analyzer.prepare_cluster_summary(contents, labels, cluster_id)
-        enriched = await analyzer.enrich_cluster_with_llm(summary)
-        cluster_infos[str(cluster_id)] = {  # Convertir en str ici aussi
-            **summary,
-            "description": enriched["description"]
-        }
-    
-    logging.info("Sauvegarde des résultats...")
-    save_analysis_results(r, crawl_id, documents, labels, cluster_infos)
-    
-    logging.info(f"""
-    ✅ Analyse terminée avec succès:
-    - Documents analysés: {len(documents)}
-    - Clusters trouvés: {len(cluster_infos)}
-    - Outliers: {sum(1 for l in labels if l == -1)}
-    """)
+        if not documents:
+            logging.error("Aucun document trouvé")
+            return
+        
+        analyzer = SemanticAnalyzer()
+        contents = [doc["content"] for doc in documents]
+        
+        logging.info("Génération des embeddings...")
+        embeddings = analyzer.compute_embeddings(contents)
+        
+        logging.info("Clustering des documents...")
+        labels, params = analyzer.cluster_documents(embeddings)
+        
+        # Vérification des labels
+        if labels is None or len(labels) == 0:
+            logging.error("Échec du clustering - aucun label généré")
+            return
+            
+        logging.info(f"Clustering terminé avec {len(set(labels))} clusters")
+        
+        logging.info("Enrichissement des clusters...")
+        cluster_infos = {}
+        for cluster_id in set(labels):
+            if cluster_id == -1:
+                continue
+                
+            summary = analyzer.prepare_cluster_summary(contents, labels, cluster_id)
+            enriched = await analyzer.enrich_cluster_with_llm(summary)
+            cluster_infos[str(cluster_id)] = {
+                **summary,
+                "description": enriched["description"]
+            }
+        
+        logging.info("Sauvegarde des résultats...")
+        save_analysis_results(r, crawl_id, documents, labels, cluster_infos)
+        
+        logging.info("Génération des graphes de visualisation...")
+        generate_and_save_graphs(r, crawl_id, documents, labels)
+        
+        logging.info(f"""
+        ✅ Analyse terminée avec succès:
+        - Documents analysés: {len(documents)}
+        - Clusters trouvés: {len(cluster_infos)}
+        - Outliers: {sum(1 for l in labels if l == -1)}
+        """)
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de l'analyse: {str(e)}")
+        traceback.print_exc()
+        sys.exit(1)
 
 if __name__ == "__main__":
     asyncio.run(main())

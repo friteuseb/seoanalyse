@@ -161,6 +161,79 @@
         border-radius: 4px;
     }
 
+    .legend-section {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+.legend-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+.legend-item {
+    padding: 4px;
+    transition: background-color 0.2s;
+}
+.link-line {
+    marker-end: url(#arrowhead);
+}
+
+#arrowhead path {
+    fill: currentColor;
+}
+.metrics-panel {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px;
+    border-radius: 8px;
+    max-width: 300px;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.metric {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.search-controls {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.info-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 300px;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+}
+
+.minimap-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 200px;
+    height: 200px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
     </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -170,28 +243,69 @@
         <button id="loadGraph">Charger le graphe</button>
         <button id="resetView">Recentrer</button>
 
+        <!-- Ajouter dans la section #controls -->
+        <div class="search-controls">
+            <input type="text" id="nodeSearch" placeholder="Rechercher une page...">
+            <select id="filterType">
+                <option value="all">Tous les liens</option>
+                <option value="incoming">Liens entrants seulement</option>
+                <option value="outgoing">Liens sortants seulement</option>
+                <option value="bidirectional">Liens bidirectionnels</option>
+            </select>
+            <input type="number" id="minLinks" placeholder="Liens minimum">
+            <input type="number" id="maxDepth" placeholder="Profondeur max">
+        </div>
+
     </div>
+    <!-- Ajouter une section de métriques -->
+<div id="metrics" class="metrics-panel">
+    <h3>Métriques du graphe</h3>
+    <div class="metric-grid">
+        <div class="metric">
+            <span class="metric-label">Densité</span>
+            <span class="metric-value">0.23</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Profondeur moyenne</span>
+            <span class="metric-value">2.5</span>
+        </div>
+        <!-- ... autres métriques ... -->
+    </div>
+</div>
+<div class="view-controls">
+    <button id="toggleView">Vue Hiérarchique/Radiale</button>
+    <button id="toggleLabels">Afficher/Masquer Labels</button>
+    <!-- Dans la section controls -->
+    <select id="layoutType">
+        <option value="force" selected>Force-directed</option>
+        <option value="radial">Radial</option>
+        <option value="tree">Arborescent</option>
+    </select>
+</div>
+<div class="export-controls">
+    <button id="exportSVG">Exporter SVG</button>
+    <button id="exportPNG">Exporter PNG</button>
+    <button id="shareView">Partager la vue</button>
+    <button id="downloadData">Télécharger données</button>
+</div>
+<div id="minimap" class="minimap-container">
+    <!-- La mini-map sera générée en JS -->
+</div>
+
     <div id="graph"></div>
-    <div id="tableContainer">
-        <table id="nodesTable">
-            <thead>
-              <tr>
-                <th colspan="2">Nom du nœud</th>
-                <th>Liens entrants</th>
-                <th>Liens sortants</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-                <!-- Rows will be populated by script.js -->
-            </tbody>
-        </table>
-    </div>
+
     <script src="js/config.js"></script>
     <script src="js/graphUtils.js"></script>
     <script src="js/tooltips.js"></script>
     <script src="js/filters.js"></script>
     <script src="js/graphRenderer.js"></script>
+    <script src="js/metrics.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/tooltips.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/minimap.js"></script>
     <script src="js/main.js"></script>
+
 </body>
 </html>

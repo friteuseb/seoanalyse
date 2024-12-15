@@ -141,6 +141,26 @@
         font-weight: 300;
         text-shadow: 0 0 3px rgba(0,0,0,0.5);
     }
+    .legend-container {
+    min-width: 200px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    color: white;
+    font-family: Arial, sans-serif;
+    pointer-events: all;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        cursor: pointer;
+    }
+
+    .legend-item:hover {
+        background: rgba(255,255,255,0.1);
+        border-radius: 4px;
+    }
+
     </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -148,6 +168,8 @@
     <div id="controls">
         <select id="graphSelect"></select>
         <button id="loadGraph">Charger le graphe</button>
+        <button id="resetView">Recentrer</button>
+
     </div>
     <div id="graph"></div>
     <div id="tableContainer">

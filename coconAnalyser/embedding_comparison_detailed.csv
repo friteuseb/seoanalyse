@@ -1,6 +1,0 @@
-Modèle,Threshold,Liens totaux,Pages Orphelines (nombre),Pages Orphelines (%),Densité du maillage,Accessibilité à 3 clics,Distribution PageRank,Efficacité du transfert,Ratio thématique,Score Global
-ada2-t60,60,180,0,0.0,0.47 (+1231.6%) ⚠️,100.0% (+666.7%) ⚠️,4.19,0.94,0.60,66.0
-camembert-t60,60,159,0,0.0,0.42 (+1076.2%) ⚠️,90.0% (+590.0%) ⚠️,4.08,0.93,0.56,64.2
-ada3-t60,60,28,3,15.8,0.07 (+107.1%) ⚠️,20.0% (+53.3%) ⚠️,4.20,0.85,0.96,30.3
-minilm-t20,20,20,6,31.6,0.05 (+48.0%) ⚠️,15.0% (+15.0%) ⚠️,4.06,0.70,1.00,24.9
-cocon-t0,0,18,11,50.0,0.04 (+0.0%) ⚠️,13.0% (+0.0%) ⚠️,4.10,0.52,0.88,22.5

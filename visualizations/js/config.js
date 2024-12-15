@@ -1,13 +1,13 @@
 const CONFIG = {
     colors: [
-        "#2D7DD2", // Bleu intense
-        "#EEB902", // Orange/Jaune
-        "#97CC04", // Vert vif
-        "#F45D01", // Orange brûlé
-        "#474647"  // Gris pour non classés
+        "#4FC3F7", // Bleu clair lumineux
+        "#00B0FF", // Bleu électrique
+        "#2979FF", // Bleu intense
+        "#304FFE", // Bleu indigo
+        "#666666"  // Gris pour non classés
     ],
     nodeMinSize: 5,
-    nodeMaxSize: 20,
+    nodeMaxSize: 25,
     linkStrength: -300,
     linkDistance: 100
 };

@@ -119,6 +119,28 @@
         background: #444;
         cursor: pointer;
     }
+    .link-line {
+        transition: all 0.3s ease;
+    }
+    
+    .link-line:hover {
+        stroke-opacity: 0.8;
+        stroke-width: 2;
+    }
+    
+    .nodes circle {
+        transition: all 0.3s ease;
+    }
+    
+    .nodes circle:hover {
+        filter: brightness(1.2);
+    }
+    
+    .node-text {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 300;
+        text-shadow: 0 0 3px rgba(0,0,0,0.5);
+    }
     </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>

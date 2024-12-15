@@ -3,6 +3,12 @@ class FilterManager {
         this.node = node;
         this.link = link;
         this.data = data;
+        
+        // Nettoyer les contrôles existants
+        d3.select("#controls")
+            .selectAll(".filter-controls")
+            .remove();
+            
         this.setupControls();
     }
 
@@ -16,7 +22,7 @@ class FilterManager {
         this.setupLinksFilter(controls);
         this.setupResetButton(controls);
     }
-
+    
     setupClusterFilter(controls) {
         const clusters = [...new Set(this.data.nodes.map(n => n.group))].sort();
         controls.append("select")

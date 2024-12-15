@@ -1,8 +1,11 @@
 class GraphRenderer {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
-        this.width = this.container.clientWidth;
-        this.height = this.container.clientHeight;
+        this.baseWidth = this.container.clientWidth;
+        this.baseHeight = this.container.clientHeight;
+        // Zone virtuelle plus grande
+        this.width = this.baseWidth * 3;
+        this.height = this.baseHeight * 3;
         this.simulation = null;
         this.tooltipManager = new TooltipManager();
         this.filterManager = null;
@@ -81,18 +84,20 @@ class GraphRenderer {
             return null;
         }
     }
-    
+
     setupSimulationForces(node, link) {
         if (!this.simulation) return;
     
         try {
-            // Ajuster les forces de la simulation
+            // Ajuster les forces pour utiliser tout l'espace disponible
             this.simulation
-                .force("center", d3.forceCenter(this.width / 2, this.height / 2))
-                .force("charge", d3.forceManyBody().strength(-1000)) // Force de répulsion plus forte
-                .force("collision", d3.forceCollide().radius(40)) // Éviter le chevauchement
-                .force("x", d3.forceX(this.width / 2).strength(0.05)) // Force plus faible vers le centre X
-                .force("y", d3.forceY(this.height / 2).strength(0.05)); // Force plus faible vers le centre Y
+                .force("center", d3.forceCenter(0, 0))
+                .force("charge", d3.forceManyBody()
+                    .strength(d => -2000 * Math.sqrt(this.data.nodes.length / 100)))
+                .force("collision", d3.forceCollide().radius(40))
+                // Retirer les forces de contrainte x et y
+                .force("x", null)
+                .force("y", null);
     
             this.simulation.on("tick", () => {
                 link.each(function(d) {
@@ -117,13 +122,8 @@ class GraphRenderer {
                         .attr("y2", targetY);
                 });
     
-                // Permettre aux nœuds de sortir légèrement des limites
-                node.attr("transform", d => {
-                    const padding = 100; // Zone de dépassement autorisée
-                    const x = Math.max(-padding, Math.min(this.width + padding, d.x || 0));
-                    const y = Math.max(-padding, Math.min(this.height + padding, d.y || 0));
-                    return `translate(${x},${y})`;
-                });
+                // Ne plus contraindre les nœuds aux limites
+                node.attr("transform", d => `translate(${d.x},${d.y})`);
             });
         } catch (error) {
             console.error("Error in setupSimulationForces:", error);
@@ -192,14 +192,25 @@ class GraphRenderer {
         d3.select("#" + this.container.id).selectAll("*").remove();
         const svg = d3.select("#" + this.container.id)
             .append("svg")
-            .attr("width", this.width)
-            .attr("height", this.height);
-
-        svg.call(d3.zoom()
-            .extent([[0, 0], [this.width, this.height]])
+            .attr("width", this.baseWidth)
+            .attr("height", this.baseHeight)
+            .attr("viewBox", `${-this.width/3} ${-this.height/3} ${this.width} ${this.height}`);
+    
+        const zoom = d3.zoom()
             .scaleExtent([0.1, 4])
-            .on("zoom", (event) => this.handleZoom(event)));
-
+            .on("zoom", (event) => {
+                svg.select("g")
+                    .attr("transform", event.transform);
+            });
+    
+        svg.call(zoom);
+        
+        // Zoom initial pour voir l'ensemble du graphe
+        const initialTransform = d3.zoomIdentity
+            .translate(this.baseWidth/2, this.baseHeight/2)
+            .scale(0.5);
+        svg.call(zoom.transform, initialTransform);
+    
         return svg;
     }
 
@@ -339,70 +350,93 @@ class GraphRenderer {
         }
 
         createLegend(svg, data) {
-            const legendWidth = 200;
-            const legendPadding = 10;
+            // Dimensions de la légende - augmentées pour la lisibilité
+            const legendWidth = 300;
+            const legendPadding = 20;
+            const itemHeight = 40;
+            const fontSize = 14;
             
+            // Supprimer l'ancienne légende si elle existe
+            svg.selectAll(".legend").remove();
+        
             // Créer le tooltip
             const tooltip = d3.select("body").append("div")
                 .attr("class", "legend-tooltip")
                 .style("position", "absolute")
                 .style("visibility", "hidden")
                 .style("background-color", "rgba(0, 0, 0, 0.9)")
-                .style("padding", "8px")
-                .style("border-radius", "4px")
+                .style("padding", "12px")
+                .style("border-radius", "6px")
                 .style("color", "white")
-                .style("max-width", "300px")
+                .style("max-width", "400px")
+                .style("font-size", "14px")
                 .style("z-index", "1000");
         
+            // Positionnement fixe de la légende par rapport au SVG visible
             const legend = svg.append("g")
                 .attr("class", "legend")
-                .attr("transform", `translate(10, 20)`); // Positionner à gauche plutôt qu'à droite
+                .attr("transform", `translate(20, 20)`);
         
-            const uniqueClusters = [...new Set(data.nodes.map(n => n.group))].sort((a, b) => a - b);
+            const uniqueClusters = [...new Set(data.nodes.map(n => n.group))]
+                .sort((a, b) => a - b);
         
-            // Fond semi-transparent
+            // Fond semi-transparent amélioré
             const background = legend.append("rect")
-                .attr("fill", "rgba(0, 0, 0, 0.7)")
-                .attr("rx", 5)
-                .attr("ry", 5);
+                .attr("fill", "rgba(0, 0, 0, 0.8)")
+                .attr("rx", 10)
+                .attr("ry", 10)
+                .attr("stroke", "rgba(255, 255, 255, 0.1)")
+                .attr("stroke-width", 1);
         
             const legendItems = legend.selectAll(".legend-item")
                 .data(uniqueClusters)
                 .enter()
                 .append("g")
                 .attr("class", "legend-item")
-                .attr("transform", (d, i) => `translate(${legendPadding}, ${20 + i * 25})`)
+                .attr("transform", (d, i) => `translate(${legendPadding}, ${legendPadding + i * itemHeight})`)
                 .style("cursor", "pointer")
                 .on("mouseover", function(event, d) {
                     const description = d === -1 ? "Pages non classées" : 
                                       data.nodes.find(n => n.group === d)?.title || `Cluster ${d}`;
                     tooltip.style("visibility", "visible")
                         .html(description)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 10) + "px");
+                        .style("left", (event.pageX + 15) + "px")
+                        .style("top", (event.pageY - 15) + "px");
+        
+                    // Mise en surbrillance des nœuds du cluster
+                    svg.selectAll(".nodes circle")
+                        .style("opacity", node => node.group === d ? 1 : 0.3);
                 })
                 .on("mouseout", function() {
                     tooltip.style("visibility", "hidden");
+                    // Restaurer l'opacité normale
+                    svg.selectAll(".nodes circle")
+                        .style("opacity", 1);
                 });
         
-            // Carré de couleur
+            // Icônes de cluster améliorées
             legendItems.append("rect")
-                .attr("width", 15)
-                .attr("height", 15)
-                .attr("fill", d => getColor(d));
+                .attr("width", 24)
+                .attr("height", 24)
+                .attr("rx", 6)
+                .attr("ry", 6)
+                .attr("fill", d => getColor(d))
+                .attr("stroke", d => d3.color(getColor(d)).brighter(0.5))
+                .attr("stroke-width", 2);
         
-            // Texte court pour la légende
+            // Texte amélioré
             legendItems.append("text")
-                .attr("x", 25)
-                .attr("y", 12)
+                .attr("x", 35)
+                .attr("y", 17)
                 .attr("fill", "white")
+                .style("font-size", `${fontSize}px`)
+                .style("font-weight", "500")
                 .text(d => {
                     const count = data.nodes.filter(n => n.group === d).length;
-                    return `Cluster ${d} (${count})`;
+                    return `Cluster ${d} (${count} pages)`;
                 })
                 .each(function() {
-                    // Tronquer le texte si nécessaire
-                    const textWidth = legendWidth - 40;
+                    const textWidth = legendWidth - 60;
                     const text = d3.select(this);
                     if (this.getComputedTextLength() > textWidth) {
                         let textContent = text.text();
@@ -420,6 +454,16 @@ class GraphRenderer {
                 .attr("y", 0)
                 .attr("width", legendWidth)
                 .attr("height", bbox.height + legendPadding * 2);
+        
+            // Ajouter un titre à la légende
+            legend.append("text")
+                .attr("x", legendWidth / 2)
+                .attr("y", -10)
+                .attr("text-anchor", "middle")
+                .attr("fill", "white")
+                .style("font-size", `${fontSize + 2}px`)
+                .style("font-weight", "bold")
+                .text("Groupes thématiques");
         }
 
         removeNode(nodeToRemove) {
@@ -498,8 +542,10 @@ class GraphRenderer {
 
     resize() {
         if (this.data) {
-            this.width = this.container.clientWidth;
-            this.height = this.container.clientHeight;
+            this.baseWidth = this.container.clientWidth;
+            this.baseHeight = this.container.clientHeight;
+            this.width = this.baseWidth * 3;
+            this.height = this.baseHeight * 3;
             this.render(this.data);
         }
     }

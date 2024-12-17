@@ -186,7 +186,7 @@
 }
 .metrics-panel {
     position: absolute;
-    left: 20px;
+    right: 260px;
     top: 20px;
     background: rgba(0, 0, 0, 0.8);
     padding: 15px;
@@ -199,7 +199,31 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
 }
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 15px;
+}
 
+.metric-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.metric-label {
+    display: block;
+    color: #aaa;
+    margin-bottom: 2px;
+}
+
+.metric-value {
+    display: block;
+    font-weight: bold;
+    color: white;
+}
 .metric {
     background: rgba(255, 255, 255, 0.1);
     padding: 10px;
@@ -256,22 +280,46 @@
             <input type="number" id="maxDepth" placeholder="Profondeur max">
         </div>
 
-    </div>
-    <!-- Ajouter une section de métriques -->
-<div id="metrics" class="metrics-panel">
-    <h3>Métriques du graphe</h3>
-    <div class="metric-grid">
-        <div class="metric">
-            <span class="metric-label">Densité</span>
-            <span class="metric-value">0.23</span>
+        <div class="metrics-panel legend-section">
+            <h4>Métriques du graphe</h4>
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <span class="metric-label">Nombre de pages</span>
+                    <span class="metric-value nodes-count">-</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Nombre de liens</span>
+                    <span class="metric-value links-count">-</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Densité</span>
+                    <span class="metric-value density">-</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Prof. moyenne</span>
+                    <span class="metric-value avg-depth">-</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Pages isolées</span>
+                    <span class="metric-value orphan-count">-</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Composants</span>
+                    <span class="metric-value components">-</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Liens bidir.</span>
+                    <span class="metric-value bidirectional">-</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Clustering</span>
+                    <span class="metric-value clustering">-</span>
+                </div>
+            </div>
         </div>
-        <div class="metric">
-            <span class="metric-label">Profondeur moyenne</span>
-            <span class="metric-value">2.5</span>
-        </div>
-        <!-- ... autres métriques ... -->
+        
     </div>
-</div>
+
 <div class="view-controls">
     <button id="toggleView">Vue Hiérarchique/Radiale</button>
     <button id="toggleLabels">Afficher/Masquer Labels</button>
@@ -283,9 +331,11 @@
     </select>
 </div>
 <div class="export-controls">
-    <button id="exportSVG">Exporter SVG</button>
-    <button id="exportPNG">Exporter PNG</button>
-    <button id="shareView">Partager la vue</button>
+    <button id="exportSVG" onclick="window.app.exportManager.exportSVG(false)">SVG (Transparent)</button>
+    <button id="exportSVG-dark" onclick="window.app.exportManager.exportSVG(true)">SVG (Fond noir)</button>
+    <button id="exportPNG" onclick="window.app.exportManager.exportPNG(false)">PNG (Transparent)</button>
+    <button id="exportPNG-dark" onclick="window.app.exportManager.exportPNG(true)">PNG (Fond noir)</button>
+    <button id="shareView">Partager</button>
     <button id="downloadData">Télécharger données</button>
 </div>
 <div id="minimap" class="minimap-container">
@@ -294,18 +344,27 @@
 
     <div id="graph"></div>
 
-    <script src="js/config.js"></script>
-    <script src="js/graphUtils.js"></script>
-    <script src="js/tooltips.js"></script>
-    <script src="js/filters.js"></script>
-    <script src="js/graphRenderer.js"></script>
-    <script src="js/metrics.js"></script>
-    <script src="js/search.js"></script>
-    <script src="js/tooltips.js"></script>
-    <script src="js/layout.js"></script>
-    <script src="js/export.js"></script>
-    <script src="js/minimap.js"></script>
-    <script src="js/main.js"></script>
+
+
+
+<!-- 1. Librairies et configurations de base -->
+<script src="js/config.js"></script>
+<script src="js/graphUtils.js"></script>
+
+<!-- 2. Classes de base -->
+<script src="js/tooltips.js"></script>             
+<script src="js/graphRenderer.js"></script>
+
+<!-- 3. Managers de fonctionnalités -->
+<script src="js/layout.js"></script>
+<script src="js/metrics.js"></script>
+<script src="js/search.js"></script>
+<script src="js/filters.js"></script>
+<script src="js/export.js"></script>
+<script src="js/minimap.js"></script>
+
+<!-- 4. Script principal -->
+<script src="js/main.js"></script>
 
 </body>
 </html>

@@ -258,6 +258,37 @@
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
+
+.search-container {
+    margin: 10px 0;
+    position: relative;
+}
+
+#nodeSearch {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background: #333;
+    color: white;
+}
+
+.minimap-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 200px;
+    height: 200px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+}
+
+.minimap-viewport {
+    pointer-events: none;
+}
+
     </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -338,14 +369,14 @@
     <button id="shareView">Partager</button>
     <button id="downloadData">Télécharger données</button>
 </div>
-<div id="minimap" class="minimap-container">
-    <!-- La mini-map sera générée en JS -->
-</div>
+
 
     <div id="graph"></div>
 
 
-
+    <div id="minimap" class="minimap-container">
+        <!-- La mini-map sera générée en JS -->
+    </div>
 
 <!-- 1. Librairies et configurations de base -->
 <script src="js/config.js"></script>

@@ -5,13 +5,17 @@ class AppManager {
         this.graphSelect = document.getElementById('graphSelect');
         this.loadGraphButton = document.getElementById('loadGraph');
         this.resetViewButton = document.getElementById('resetView');
+
         
         // Initialisation des managers de fonctionnalités
         this.metricsManager = new MetricsManager(this.graphRenderer);
         this.searchManager = new SearchManager(this.graphRenderer);
         this.layoutManager = new LayoutManager(this.graphRenderer);
         this.exportManager = new ExportManager(this.graphRenderer);
+        // Passer le graphRenderer à la minimap
         this.minimapManager = new MinimapManager(this.graphRenderer);
+        // Ajouter la référence dans le graphRenderer
+        this.graphRenderer.minimapManager = this.minimapManager;
         
         this.setupEventListeners();
         this.loadAvailableGraphs();
@@ -80,6 +84,8 @@ class AppManager {
                 this.minimapManager.createMinimap();
                 this.searchManager.reset();
                 this.layoutManager.setDefaultLayout();
+                this.minimapManager.createMinimap(); 
+
             })
             .catch(error => {
                 console.error('Error loading graph:', error);

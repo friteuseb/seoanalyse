@@ -7,6 +7,8 @@ class GraphRenderer {
         this.tooltipManager = new TooltipManager();
         this.filterManager = null;
         this.data = null;
+        this.minimapManager = null; // Ajoutez cette ligne
+
     }
 
 
@@ -33,7 +35,11 @@ class GraphRenderer {
         
         // Configuration des filtres
         this.filterManager = new FilterManager(elements.node, elements.link, data);
-    }
+        // Mettre à jour la minimap après le rendu
+        if (this.minimapManager) {
+            this.minimapManager.createMinimap();
+        }
+}
 
 
     
@@ -204,8 +210,14 @@ class GraphRenderer {
         const g = svg.append("g");
         
         const zoom = d3.zoom()
-            .scaleExtent([0.2, 4])
-            .on("zoom", (event) => g.attr("transform", event.transform));
+        .scaleExtent([0.2, 4])
+        .on("zoom", (event) => {
+            g.attr("transform", event.transform);
+            // Mettre à jour la minimap lors du zoom
+            if (this.minimapManager) {
+                this.minimapManager.updateViewport();
+            }
+        });
         
         svg.call(zoom);
         
@@ -433,43 +445,60 @@ class GraphRenderer {
                     }
 
 
-        removeNode(nodeToRemove) {
-            if (!this.data) return;
-        
-            try {
-                this.data.nodes = this.data.nodes.filter(n => n.id !== nodeToRemove.id);
-                this.data.links = this.data.links.filter(l => 
-                    l.source.id !== nodeToRemove.id && l.target.id !== nodeToRemove.id
-                );
-        
-                // Mise à jour de la simulation
-                this.simulation.nodes(this.data.nodes);
-                this.simulation.force("link").links(this.data.links);
-                
-                // Redémarrage plus progressif de la simulation
-                this.simulation
-                    .alpha(0.5) // Augmentation de l'alpha pour une meilleure réorganisation
-                    .alphaTarget(0)
-                    .alphaDecay(0.02) // Ralentissement de la décroissance
-                    .restart();
-        
-                // Mise à jour du DOM
-                const nodes = d3.select("#" + this.container.id)
-                    .selectAll(".nodes g")
-                    .data(this.data.nodes, d => d.id);
+                    removeNode(nodeToRemove) {
+                        if (!this.data) return;
                     
-                nodes.exit().remove();
-        
-                const links = d3.select("#" + this.container.id)
-                    .selectAll(".links line")
-                    .data(this.data.links, d => `${d.source.id}-${d.target.id}`);
+                        try {
+                            // Mise à jour des données
+                            this.data.nodes = this.data.nodes.filter(n => n.id !== nodeToRemove.id);
+                            this.data.links = this.data.links.filter(l => 
+                                l.source.id !== nodeToRemove.id && l.target.id !== nodeToRemove.id
+                            );
                     
-                links.exit().remove();
-        
-            } catch (error) {
-                console.error("Error removing node:", error);
-            }
-        }
+                            // Mise à jour du DOM
+                            this.node = d3.select("#" + this.container.id)
+                                .selectAll(".nodes g")
+                                .data(this.data.nodes, d => d.id);
+                                
+                            this.node.exit().remove();
+                    
+                            this.link = d3.select("#" + this.container.id)
+                                .selectAll(".links line")
+                                .data(this.data.links, d => `${d.source.id}-${d.target.id}`);
+                                
+                            this.link.exit().remove();
+                    
+                            // Mise à jour de la simulation
+                            this.simulation.nodes(this.data.nodes);
+                            this.simulation.force("link").links(this.data.links);
+                            
+                            // Configuration de la simulation
+                            this.simulation
+                                .alpha(0.5)
+                                .alphaTarget(0)
+                                .alphaDecay(0.02)
+                                .on("tick", () => {
+                                    // Mise à jour des positions
+                                    this.node.attr("transform", d => `translate(${d.x},${d.y})`);
+                                    this.link
+                                        .attr("x1", d => d.source.x)
+                                        .attr("y1", d => d.source.y)
+                                        .attr("x2", d => d.target.x)
+                                        .attr("y2", d => d.target.y);
+                    
+                                    // Mise à jour de la minimap si la simulation est stable
+                                    if (this.simulation.alpha() < 0.05) {
+                                        if (this.minimapManager) {
+                                            this.minimapManager.createMinimap();
+                                        }
+                                    }
+                                })
+                                .restart();
+                    
+                        } catch (error) {
+                            console.error("Error removing node:", error);
+                        }
+                    }
 
         addArrowMarkers(svg) {
             // Ajouter un filtre pour l'effet de lueur

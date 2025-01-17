@@ -1,14 +1,13 @@
 class GraphRenderer {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
-        this.width = this.container.clientWidth;
-        this.height = this.container.clientHeight;
+        // Définir des dimensions plus grandes pour capturer tout le graphe
+        this.width = Math.max(this.container.clientWidth * 2, 3000);  // valeur minimum de 3000px
+        this.height = Math.max(this.container.clientHeight * 2, 3000);
         this.simulation = null;
         this.tooltipManager = new TooltipManager();
         this.filterManager = null;
         this.data = null;
-        this.minimapManager = null; // Ajoutez cette ligne
-
     }
 
 

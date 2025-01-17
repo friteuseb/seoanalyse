@@ -27,13 +27,24 @@ class ExportManager {
     prepareSVGForExport(withBackground = true) {
         const originalSvg = this.graphRenderer.container.querySelector('svg');
         const svgClone = originalSvg.cloneNode(true);
-
-        // Ajouter un fond noir si demandé
+    
+        // Définir la taille du SVG pour inclure tout le graphe
+        svgClone.setAttribute('width', this.graphRenderer.width);
+        svgClone.setAttribute('height', this.graphRenderer.height);
+        svgClone.setAttribute('viewBox', `0 0 ${this.graphRenderer.width} ${this.graphRenderer.height}`);
+        
         if (withBackground) {
+            // Ajouter un rectangle de fond qui couvre toute la surface du SVG
             const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             rect.setAttribute("width", "100%");
             rect.setAttribute("height", "100%");
             rect.setAttribute("fill", "#1a1a1a");
+            // S'assurer que le rectangle couvre toute la zone du viewBox
+            rect.setAttribute("x", "0");
+            rect.setAttribute("y", "0");
+            // Ajouter des dimensions explicites en plus du pourcentage
+            rect.setAttribute("width", this.graphRenderer.width);
+            rect.setAttribute("height", this.graphRenderer.height);
             svgClone.insertBefore(rect, svgClone.firstChild);
         } else {
             // Adapter les couleurs pour fond blanc
@@ -50,7 +61,12 @@ class ExportManager {
                 marker.setAttribute('fill', '#666');
             });
         }
-
+    
+        // Ajuster le groupe principal pour inclure tout le graphe
+        const mainGroup = svgClone.querySelector('g');
+        const currentTransform = d3.zoomTransform(originalSvg);
+        mainGroup.setAttribute('transform', `translate(${currentTransform.x},${currentTransform.y}) scale(${currentTransform.k})`);
+    
         return svgClone;
     }
 
@@ -84,10 +100,11 @@ class ExportManager {
             const img = new Image();
             const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
             const url = URL.createObjectURL(svgBlob);
-
+    
             img.onload = () => {
-                canvas.width = img.width;
-                canvas.height = img.height;
+                // Définir la taille du canvas pour correspondre à tout le graphe
+                canvas.width = this.graphRenderer.width;
+                canvas.height = this.graphRenderer.height;
                 
                 // Appliquer le fond si nécessaire
                 if (withBackground) {
@@ -95,6 +112,9 @@ class ExportManager {
                     context.fillRect(0, 0, canvas.width, canvas.height);
                 }
                 
+                // Dessiner l'image SVG en tenant compte de la transformation actuelle
+                const transform = d3.zoomTransform(this.graphRenderer.container.querySelector('svg'));
+                context.setTransform(transform.k, 0, 0, transform.k, transform.x, transform.y);
                 context.drawImage(img, 0, 0);
                 
                 canvas.toBlob((blob) => {
@@ -108,7 +128,7 @@ class ExportManager {
                     URL.revokeObjectURL(url);
                 });
             };
-
+    
             img.src = url;
         } catch (error) {
             console.error('Erreur lors de l\'export PNG:', error);

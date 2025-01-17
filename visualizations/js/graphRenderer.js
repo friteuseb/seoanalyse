@@ -289,7 +289,6 @@ class GraphRenderer {
                 .data(nodes)
                 .join("g")
                 .each(function(d) {
-                    // Stocker une référence au nœud DOM
                     d.node = this;
                 })
                 .call(d3.drag()
@@ -298,9 +297,7 @@ class GraphRenderer {
                     .on("end", this.dragended))
                 .on("contextmenu", (event, d) => {
                     event.preventDefault();
-                    if (confirm(`Supprimer le nœud "${d.label}" ?`)) {
-                        this.removeNode(d);
-                    }
+                    this.showContextMenu(event, d);
                 })
                 .on("mouseover", (event, d) => this.tooltipManager.show(event, d, incomingLinksCount))
                 .on("mouseout", () => this.tooltipManager.hide());
@@ -325,6 +322,110 @@ class GraphRenderer {
             return node;
         }
 
+
+
+        showContextMenu(event, node) {
+            // Supprimer tout menu contextuel existant
+            d3.selectAll('.context-menu').remove();
+        
+            // Créer le menu contextuel
+            const menu = d3.select('body')
+                .append('div')
+                .attr('class', 'context-menu')
+                .style('position', 'absolute')
+                .style('left', `${event.pageX}px`)
+                .style('top', `${event.pageY}px`)
+                .style('background-color', 'rgba(0, 0, 0, 0.9)')
+                .style('border', '1px solid #444')
+                .style('border-radius', '4px')
+                .style('padding', '5px')
+                .style('z-index', '1000');
+        
+            // Ajouter les options du menu
+            this.addMenuItem(menu, "Supprimer ce nœud", () => this.removeNode(node));
+            this.addMenuItem(menu, "Ne garder que ce nœud et ses connexions", () => this.keepNodeAndConnections(node));
+        
+            // Fermer le menu au clic ailleurs
+            d3.select('body').on('click.context-menu', () => {
+                d3.selectAll('.context-menu').remove();
+            });
+        }
+
+        keepNodeAndConnections(nodeToKeep) {
+            if (!this.data) return;
+        
+            try {
+                // Trouver tous les nœuds connectés directement à ce nœud
+                const connectedNodeIds = new Set();
+                connectedNodeIds.add(nodeToKeep.id);
+        
+                // Ajouter les nœuds liés par des liens entrants ou sortants
+                this.data.links.forEach(link => {
+                    if (link.source.id === nodeToKeep.id) {
+                        connectedNodeIds.add(link.target.id);
+                    }
+                    if (link.target.id === nodeToKeep.id) {
+                        connectedNodeIds.add(link.source.id);
+                    }
+                });
+        
+                // Filtrer les nœuds et les liens
+                this.data.nodes = this.data.nodes.filter(n => connectedNodeIds.has(n.id));
+                this.data.links = this.data.links.filter(l => 
+                    connectedNodeIds.has(l.source.id) && connectedNodeIds.has(l.target.id)
+                );
+        
+                // Mise à jour de la simulation
+                this.simulation.nodes(this.data.nodes);
+                this.simulation.force("link").links(this.data.links);
+                
+                // Redémarrage plus progressif de la simulation
+                this.simulation
+                    .alpha(0.5)
+                    .alphaTarget(0)
+                    .alphaDecay(0.02)
+                    .restart();
+        
+                // Mise à jour du DOM
+                const nodes = d3.select("#" + this.container.id)
+                    .selectAll(".nodes g")
+                    .data(this.data.nodes, d => d.id);
+                    
+                nodes.exit().remove();
+        
+                const links = d3.select("#" + this.container.id)
+                    .selectAll(".links line")
+                    .data(this.data.links, d => `${d.source.id}-${d.target.id}`);
+                    
+                links.exit().remove();
+        
+            } catch (error) {
+                console.error("Error keeping node and connections:", error);
+            }
+        }
+        
+        addMenuItem(menu, text, onClick) {
+            menu.append('div')
+                .attr('class', 'context-menu-item')
+                .style('padding', '8px 12px')
+                .style('cursor', 'pointer')
+                .style('color', 'white')
+                .style('hover', 'background-color: #444')
+                .text(text)
+                .on('click', (event) => {
+                    event.stopPropagation();
+                    onClick();
+                    d3.selectAll('.context-menu').remove();
+                })
+                .on('mouseover', function() {
+                    d3.select(this).style('background-color', '#444');
+                })
+                .on('mouseout', function() {
+                    d3.select(this).style('background-color', 'transparent');
+                });
+        }
+        
+        
         createLegend(svg, data) {
             // Sélectionner le conteneur de légende
             const legendContainer = d3.select(".legend-container");

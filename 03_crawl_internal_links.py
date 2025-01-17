@@ -68,130 +68,153 @@ def get_documents_from_redis(crawl_id):
         logging.error(f"Erreur lors de la récupération des documents: {e}")
         return {}
 
-def extract_internal_links(base_url, content, selector=None):
+def extract_internal_links(base_url, content, selector=None, exclude_patterns=None):
     """
-    Extrait uniquement les liens internes présents dans la zone de contenu spécifiée 
-    ou dans toute la page si aucun sélecteur n'est fourni.
-    
-    Args:
-        base_url (str): L'URL de base du site
-        content (str): Le contenu HTML de la page
-        selector (str, optional): Le sélecteur CSS pour cibler la zone de contenu principale.
-            Si None, analyse toute la page.
-    
-    Returns:
-        list: Liste des URLs internes trouvées
+    Extrait les liens internes en gérant les patterns d'exclusion
     """
+    if not content:
+        return []
+        
     soup = BeautifulSoup(content, 'html.parser')
     
-    # Si aucun sélecteur n'est fourni, utiliser le body entier
+    # Si aucun sélecteur n'est fourni ou si le sélecteur ne trouve rien,
+    # utiliser le body entier
     if not selector:
         content_area = [soup.find('body')] if soup.find('body') else []
         logging.info(f"✅ Analyse de la page entière pour {base_url}")
     else:
-        # Trouver la zone de contenu spécifiée
         content_area = soup.select(selector)
         if not content_area:
-            logging.warning(f"❌ Aucune zone trouvée avec le sélecteur {selector} pour {base_url}")
-            return []
-        logging.info(f"✅ Zone de contenu trouvée pour {base_url}")
+            content_area = [soup.find('body')] if soup.find('body') else []
+            logging.warning(f"⚠️ Sélecteur {selector} non trouvé pour {base_url}, analyse de la page entière")
     
+    if not content_area:
+        logging.warning(f"❌ Aucun contenu trouvé pour {base_url}")
+        return []
+
     links = set()
     base_domain = urlparse(base_url).netloc
     
     for area in content_area:
-        # Debug pour voir le contenu de la zone
-        logging.debug(f"Analyse de la zone : {area.get('class', 'no-class')} - {area.get('id', 'no-id')}")
-        
         for link in area.find_all('a', href=True):
             href = link['href']
-            link_text = link.get_text().strip()
             
-            # Ignorer les ancres seules et les liens javascript
-            if href.startswith('#') or href.startswith('javascript:'):
+            # Ignorer les liens non valides
+            if not href or href.startswith(('#', 'javascript:', 'mailto:', 'tel:')):
                 continue
                 
             try:
-                # Normalisation de l'URL
                 full_url = urljoin(base_url, href)
                 parsed_url = urlparse(full_url)
                 
-                # Vérification des liens internes
+                # Vérifier si c'est un lien interne
                 if parsed_url.netloc == base_domain:
                     normalized_url = urlunparse((
                         parsed_url.scheme,
                         parsed_url.netloc,
                         parsed_url.path.rstrip('/'),
-                        parsed_url.params,
-                        parsed_url.query,
-                        None  # Pas de fragment
+                        '',  # pas de paramètres
+                        '',  # pas de query
+                        ''   # pas de fragment
                     ))
+                    
+                    # Vérifier les patterns d'exclusion
+                    if exclude_patterns and any(pattern.lower() in normalized_url.lower() for pattern in exclude_patterns):
+                        logging.debug(f"⏭️ Lien exclu (pattern match): {normalized_url}")
+                        continue
+                    
                     links.add(normalized_url)
-                    logging.debug(f"Lien trouvé : {link_text} -> {normalized_url}")
                 
             except Exception as e:
                 logging.warning(f"Erreur lors du traitement de l'URL {href}: {e}")
 
-    zone_type = "la page entière" if not selector else "la zone de contenu"
-    logging.info(f"🔍 Liens trouvés dans {zone_type} : {len(links)}")
     return list(links)
 
-def crawl_with_retry(url, max_retries=3, delay=1):
+
+def crawl_with_retry(url, exclude_patterns=None, max_retries=3, delay=1):
     """
-    Télécharge une page avec gestion des erreurs et retry.
+    Télécharge une page avec gestion des redirections et patterns d'exclusion
     """
     for attempt in range(max_retries):
         try:
-            # Attente entre les requêtes pour éviter de surcharger le serveur
             time.sleep(delay)
-            
-            # Utilisation simple de fetch_url sans paramètres additionnels
             response = trafilatura.fetch_url(url)
-            if response:
-                return response
             
-            # Augmenter le délai après chaque échec
-            delay *= 2
+            # Si la réponse est une chaîne (contenu HTML)
+            if isinstance(response, str):
+                return response
+
+            # Si la réponse est un objet avec une URL (redirection)
+            final_url = url
+            if hasattr(response, 'url'):
+                final_url = response.url
+                
+            # Vérifier les patterns d'exclusion sur l'URL finale
+            if exclude_patterns and any(pattern.lower() in final_url.lower() for pattern in exclude_patterns):
+                logging.info(f"⏭️ URL après redirection exclue (pattern match): {final_url}")
+                return None
+                
+            # Extraire le contenu HTML
+            if response:
+                content = trafilatura.extract(response)
+                if content:
+                    return content
+            
+            delay *= 2  # Augmenter le délai après chaque échec
             
         except Exception as e:
             logging.warning(f"Tentative {attempt + 1}/{max_retries} échouée pour {url}: {e}")
+            delay *= 2
             time.sleep(delay)
     
     logging.error(f"Échec du téléchargement de {url} après {max_retries} tentatives")
     return None
 
-def save_internal_links_to_redis(crawl_id, documents, selector):
+
+def should_exclude_url(url, patterns):
+    """Vérifie si l'URL contient un des patterns à exclure"""
+    if not patterns:
+        return False
+    url_lower = url.lower()
+    return any(pattern.lower() in url_lower for pattern in patterns)
+
+
+def save_internal_links_to_redis(crawl_id, documents, selector, exclude_patterns=None):
+    """Sauvegarde les liens internes dans Redis en respectant les patterns d'exclusion."""
     total = len(documents)
     successful = 0
     failed = 0
+    excluded = 0
     
-    logging.info(f"Démarrage du crawl des liens internes pour {total} documents")
+    logging.info(f"""
+    🔍 Analyse des liens internes:
+    • Documents à traiter: {total}
+    • Sélecteur CSS: {selector}
+    • Patterns exclus: {exclude_patterns if exclude_patterns else 'Aucun'}
+    """)
     
     for i, (doc_id, doc_info) in enumerate(documents.items(), 1):
         url = doc_info['url']
-        logging.info(f"Processing {i}/{total}: {url}")
         
         downloaded = crawl_with_retry(url)
-        
         if not downloaded:
             failed += 1
-            logging.error(f"❌ Échec du téléchargement pour {url}")
             continue
             
-        internal_links_out = extract_internal_links(url, downloaded, selector)
-        successful += 1
+        internal_links = extract_internal_links(url, downloaded, selector, exclude_patterns)
         
-        if internal_links_out:
+        if internal_links:
             doc_data = {
-                "internal_links_out": json.dumps(internal_links_out),
+                "internal_links_out": json.dumps(internal_links),
                 "crawl_date": datetime.now().isoformat(),
                 "content_length": len(downloaded),
-                "links_count": len(internal_links_out)
+                "links_count": len(internal_links)
             }
-            logging.info(f"✅ {len(internal_links_out)} liens trouvés pour {url}")
             r.hset(doc_id, mapping=doc_data)
+            successful += 1
+            
+            logging.info(f"✅ {len(internal_links)} liens trouvés pour {url}")
         else:
-            logging.info(f"ℹ️ Aucun lien trouvé pour {url}")
             r.hset(doc_id, mapping={
                 "internal_links_out": "[]",
                 "crawl_date": datetime.now().isoformat(),
@@ -199,18 +222,25 @@ def save_internal_links_to_redis(crawl_id, documents, selector):
                 "links_count": 0
             })
             
-        if i % 5 == 0 or i == total:
-            percent = (i/total)*100
-            logging.info(f"📊 Progression: {i}/{total} ({percent:.1f}%) - ✅ Réussis: {successful}, ❌ Échecs: {failed}")
+        if i % 10 == 0 or i == total:
+            progress = (i/total) * 100
+            logging.info(f"""
+            📊 Progression: {i}/{total} ({progress:.1f}%)
+            ✅ Succès: {successful}
+            ❌ Échecs: {failed}
+            ⏭️ Exclus: {excluded}
+            """)
     
-    # Résumé final
     logging.info(f"""
     🏁 Crawl terminé:
-    - Documents traités: {total}
-    - Succès: {successful}
-    - Échecs: {failed}
-    - Taux de réussite: {(successful/total)*100:.1f}%
+    • Documents traités: {total}
+    • Succès: {successful}
+    • Échecs: {failed}
+    • Exclus: {excluded}
+    • Taux de réussite: {(successful/(total-excluded))*100:.1f}%
     """)
+
+
 
 def assign_cluster_colors(documents):
     cluster_colors = {}
@@ -227,19 +257,25 @@ def assign_cluster_colors(documents):
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python3 03_crawl_internal_links.py <crawl_id> <CSS Selector>")
+        print("Usage: python3 03_crawl_internal_links.py <crawl_id> <CSS Selector> [-e pattern1 pattern2 ...]")
         sys.exit(1)
     
     crawl_id = sys.argv[1]
     selector = sys.argv[2]
+    exclude_patterns = []
     
+    # Récupérer les patterns d'exclusion
+    if '-e' in sys.argv:
+        idx = sys.argv.index('-e')
+        exclude_patterns = sys.argv[idx+1:]
+
     documents = get_documents_from_redis(crawl_id)
     if not documents:
         print("No documents found for the given crawl ID.")
         return
 
     documents = assign_cluster_colors(documents)
-    save_internal_links_to_redis(crawl_id, documents, selector)
+    save_internal_links_to_redis(crawl_id, documents, selector, exclude_patterns)
     print("Internal links crawling complete.")
 
 if __name__ == "__main__":

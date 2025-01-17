@@ -86,29 +86,119 @@ def read_local_file(file_path):
         return None
 
 # --- Fonctions communes ---
-def save_to_redis(identifier, content, crawl_id):
-    """Sauvegarde le contenu dans Redis."""
-    doc_id = f"{crawl_id}:doc:{r.incr(f'{crawl_id}:doc_count')}"
-    r.hset(doc_id, mapping={
-        "url": identifier,
-        "content": content,
-    })
-    logging.info(f"✅ Enregistré: {identifier}")
+def save_to_redis(identifier, content, crawl_id, exclude_patterns=None):
+    """Sauvegarde le contenu dans Redis en respectant les patterns d'exclusion"""
+    try:
+        # Vérification des patterns d'exclusion
+        if exclude_patterns:
+            for pattern in exclude_patterns:
+                if pattern.lower() in identifier.lower():
+                    logging.info(f"❌ Page ignorée (pattern '{pattern}'): {identifier}")
+                    return False
 
-def crawl_web(url):
-    """Fonction principale pour le crawl web."""
-    # Nettoyer et normaliser l'URL pour créer un ID unique
+        doc_id = f"{crawl_id}:doc:{r.incr(f'{crawl_id}:doc_count')}"
+        r.hset(doc_id, mapping={
+            "url": identifier,
+            "content": content,
+        })
+        logging.info(f"✅ Page stockée: {identifier}")
+        return True
+            
+    except Exception as e:
+        logging.error(f"Erreur lors du stockage de {identifier}: {e}")
+        return False
+    
+def filter_sitemap_urls(urls, exclude_patterns):
+    """Filtre les URLs du sitemap selon les patterns d'exclusion"""
+    original_count = len(urls)
+    filtered_urls = []
+    excluded_urls = []
+    
+    for url in urls:
+        should_exclude = any(pattern.lower() in url.lower() for pattern in exclude_patterns)
+        if should_exclude:
+            excluded_urls.append(url)
+        else:
+            filtered_urls.append(url)
+    
+    logging.info(f"""
+    🔍 Filtrage du sitemap:
+    • URLs totales: {original_count}
+    • URLs retenues: {len(filtered_urls)}
+    • URLs exclues: {len(excluded_urls)}
+    • Patterns utilisés: {exclude_patterns}
+    """)
+    
+    if excluded_urls:
+        logging.debug("Examples d'URLs exclues:")
+        for url in excluded_urls[:5]:
+            logging.debug(f"⏭️  {url}")
+    
+    return filtered_urls
+
+def get_urls_from_sitemap(base_url, exclude_patterns=None):
+    """Récupère les URLs depuis le sitemap et applique le filtrage"""
+    sitemap_urls = sitemap_search(base_url)
+    if sitemap_urls:
+        logging.info(f"✅ {len(sitemap_urls)} URLs trouvées dans le sitemap")
+    else:
+        sitemap_url = f"{base_url.rstrip('/')}/sitemap.xml"
+        logging.info(f"Lecture du sitemap : {sitemap_url}")
+        
+        try:
+            response = requests.get(sitemap_url)
+            response.raise_for_status()
+            
+            root = ET.fromstring(response.content)
+            ns = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+            
+            sitemap_urls = []
+            for url in root.findall('.//ns:url/ns:loc', ns):
+                sitemap_urls.append(url.text)
+            
+            logging.info(f"✅ {len(sitemap_urls)} URLs trouvées dans le sitemap")
+            
+        except Exception as e:
+            logging.warning(f"Erreur lors de la lecture du sitemap : {e}")
+            sitemap_urls = [base_url]
+    
+    # Appliquer le filtrage si des patterns sont définis
+    if exclude_patterns:
+        return filter_sitemap_urls(sitemap_urls, exclude_patterns)
+    
+    return sitemap_urls
+
+def crawl_web(url, exclude_patterns=None):
+    """Fonction principale pour le crawl web"""
     cleaned_url = url.split('//')[1].replace(':', '_').replace('.', '_').replace('/', '_')
     crawl_id = f"{cleaned_url}__{str(uuid.uuid4())}"
     
-    urls = get_urls_from_sitemap(url)
+    # Récupérer et filtrer les URLs du sitemap
+    urls = get_urls_from_sitemap(url, exclude_patterns)
     
-    logging.info(f"🌐 Début du crawl web pour {url}")
-    for url in urls:
-        content = crawl_url(url)
+    stored_pages = 0
+    total_urls = len(urls)
+    
+    logging.info(f"""
+    🌐 Démarrage du crawl web:
+    • URL de base: {url}
+    • URLs à traiter: {total_urls}
+    """)
+    
+    for current_url in urls:
+        content = crawl_url(current_url)
         if content:
-            save_to_redis(url, content, crawl_id)
-            
+            save_to_redis(current_url, content, crawl_id)
+            stored_pages += 1
+        
+        # Afficher la progression
+        if stored_pages % 10 == 0 or stored_pages == total_urls:
+            progress = (stored_pages/total_urls) * 100
+            logging.info(f"""
+            📊 Progression: {stored_pages}/{total_urls} ({progress:.1f}%)
+            ✅ Pages stockées: {stored_pages}
+            """)
+    
     return crawl_id
 
 def crawl_local(path):
@@ -130,17 +220,18 @@ def crawl_local(path):
     return crawl_id
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         print("""Usage: 
-        Pour crawl web: python3 01_crawl.py https://example.com
+        Pour crawl web: python3 01_crawl.py https://example.com [exclude_patterns...]
         Pour crawl local: python3 01_crawl.py ./dossier_ou_fichier""")
         sys.exit(1)
     
     source = sys.argv[1]
+    exclude_patterns = sys.argv[2:] if len(sys.argv) > 2 else None
     
     # Déterminer si c'est une URL ou un chemin local
     if source.startswith(('http://', 'https://')):
-        crawl_id = crawl_web(source)
+        crawl_id = crawl_web(source, exclude_patterns)
     else:
         crawl_id = crawl_local(source)
         

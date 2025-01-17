@@ -261,26 +261,62 @@ def save_analysis_results(r, crawl_id, documents, labels, cluster_infos):
     """Sauvegarde les résultats de l'analyse dans Redis."""
     base_crawl_id = crawl_id.split(':')[0]
     
-    # Sauvegarder les informations de clustering
-    for i, doc in enumerate(documents):
-        cluster_id = int(labels[i])  # Conversion explicite en int Python standard
-        info = cluster_infos.get(str(cluster_id), {"description": "Contenu non classé"})
-        
-        r.hset(doc["doc_id"], mapping={
-            "cluster": cluster_id,
-            "cluster_description": info["description"]
-        })
-    
-    # Convertir les clés numpy.int64 en str avant la sérialisation
-    serializable_infos = {
-        str(k): v for k, v in cluster_infos.items()
+    # Création du graphe simple (juste les liens)
+    simple_graph = {
+        "nodes": [],
+        "links": []
     }
     
-    serialized_info = json.dumps(serializable_infos, default=convert_to_serializable)
-    r.set(f"{base_crawl_id}_cluster_info", serialized_info)
+    # Création du graphe avec clusters
+    clustered_graph = {
+        "nodes": [],
+        "links": []
+    }
     
-    logging.info(f"Résultats sauvegardés pour {len(documents)} documents dans {len(cluster_infos)} clusters")
-
+    # Construction des graphes
+    for idx, doc in enumerate(documents):
+        url = doc['url']
+        cluster = labels[idx]
+        
+        # Gérer les liens internes qui peuvent être une liste ou une chaîne JSON
+        internal_links = doc.get('internal_links_out', [])
+        if isinstance(internal_links, str):
+            internal_links = json.loads(internal_links)
+        
+        # Ajout des noeuds
+        node = {
+            "id": url,
+            "label": url.split('/')[-1] or url.split('/')[-2],
+            "internal_links_count": len(internal_links),
+            "group": cluster
+        }
+        
+        simple_graph["nodes"].append(node)
+        clustered_graph["nodes"].append({**node, "title": cluster_infos.get(str(cluster), {}).get("description", "")})
+        
+        # Ajout des liens
+        for target in internal_links:
+            link = {
+                "source": url,
+                "target": target,
+                "value": 1
+            }
+            simple_graph["links"].append(link)
+            clustered_graph["links"].append(link)
+    
+    # Sauvegarde des graphes dans Redis
+    r.set(f"{base_crawl_id}_simple_graph", json.dumps(simple_graph))
+    r.set(f"{base_crawl_id}_clustered_graph", json.dumps(clustered_graph))
+    
+    # Sauvegarde des infos de cluster
+    r.set(f"{base_crawl_id}_cluster_info", json.dumps(cluster_infos))
+    
+    logging.info(f"""
+    💾 Données sauvegardées :
+    • Nœuds : {len(simple_graph['nodes'])}
+    • Liens : {len(simple_graph['links'])}
+    • Clusters : {len(cluster_infos)}
+    """)
 
 def convert_numpy_types(obj):
     """Convertit les types numpy en types Python standards."""
@@ -368,18 +404,32 @@ def generate_and_save_graphs(redis_client, crawl_id, documents_list, labels):
 
 async def main():
     if len(sys.argv) < 2:
-        logging.error("Usage: python3 02_analyse.py <crawl_id>")
+        logging.error("Usage: python3 02_analyse.py <crawl_id> [--no-cluster]")
         return
     
-    try:
-        crawl_id = sys.argv[1]
-        r = get_redis_connection()
-        documents = get_documents_from_redis(r, crawl_id)
+    crawl_id = sys.argv[1]
+    disable_clustering = "--no-cluster" in sys.argv
+    
+    r = get_redis_connection()
+    documents = get_documents_from_redis(r, crawl_id)
+    
+    if not documents:
+        logging.error("Aucun document trouvé")
+        return
         
-        if not documents:
-            logging.error("Aucun document trouvé")
-            return
-        
+    if disable_clustering:
+        logging.info("🔄 Clusterisation désactivée - Attribution d'un groupe unique")
+        # Pas besoin de calculer les embeddings ni d'initialiser l'analyzer
+        labels = [0] * len(documents)
+        cluster_infos = {
+            "0": {
+                "size": len(documents),
+                "description": "Groupe unique (clusterisation désactivée)",
+                "key_terms": []
+            }
+        }
+    else:
+        # Code pour la clusterisation active
         analyzer = SemanticAnalyzer()
         contents = [doc["content"] for doc in documents]
         
@@ -389,43 +439,29 @@ async def main():
         logging.info("Clustering des documents...")
         labels, params = analyzer.cluster_documents(embeddings)
         
-        # Vérification des labels
-        if labels is None or len(labels) == 0:
-            logging.error("Échec du clustering - aucun label généré")
-            return
-            
-        logging.info(f"Clustering terminé avec {len(set(labels))} clusters")
-        
         logging.info("Enrichissement des clusters...")
         cluster_infos = {}
         for cluster_id in set(labels):
             if cluster_id == -1:
                 continue
-                
+            
             summary = analyzer.prepare_cluster_summary(contents, labels, cluster_id)
             enriched = await analyzer.enrich_cluster_with_llm(summary)
             cluster_infos[str(cluster_id)] = {
                 **summary,
                 "description": enriched["description"]
             }
+    
+    logging.info("Sauvegarde des résultats...")
+    save_analysis_results(r, crawl_id, documents, labels, cluster_infos)
+    
+    logging.info(f"""
+    ✅ Analyse terminée avec succès:
+    - Documents analysés: {len(documents)}
+    - Mode clusterisation: {'Activé' if not disable_clustering else 'Désactivé'}
+    - {'Clusters trouvés: ' + str(len(cluster_infos)) if not disable_clustering else 'Groupe unique'}
+    - Outliers: {sum(1 for l in labels if l == -1) if not disable_clustering else 0}
+    """)
         
-        logging.info("Sauvegarde des résultats...")
-        save_analysis_results(r, crawl_id, documents, labels, cluster_infos)
-        
-        logging.info("Génération des graphes de visualisation...")
-        generate_and_save_graphs(r, crawl_id, documents, labels)
-        
-        logging.info(f"""
-        ✅ Analyse terminée avec succès:
-        - Documents analysés: {len(documents)}
-        - Clusters trouvés: {len(cluster_infos)}
-        - Outliers: {sum(1 for l in labels if l == -1)}
-        """)
-        
-    except Exception as e:
-        logging.error(f"Erreur lors de l'analyse: {str(e)}")
-        traceback.print_exc()
-        sys.exit(1)
-
 if __name__ == "__main__":
     asyncio.run(main())

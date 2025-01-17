@@ -72,7 +72,16 @@ def setup_argument_parser():
                        nargs='?',  # Rend l'argument optionnel
                        default=None,  # Valeur par défaut si non spécifié
                        help=colored("Sélecteur CSS pour cibler les zones à analyser (optionnel)", "cyan"))
+    parser.add_argument("--exclude-patterns", "-e",
+                       nargs='+',
+                       default=[],
+                       help=colored("Patterns à exclure (ex: -e sku cart checkout)", "cyan"))
+    parser.add_argument("--no-cluster",
+                       action="store_true",
+                       help=colored("Désactive la clusterisation sémantique", "cyan"))
     return parser
+
+
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -105,9 +114,13 @@ def run_command(command):
         raise subprocess.CalledProcessError(return_code, command)
     return ''.join(output)
 
-def run_crawl(url):
+def run_crawl(url, exclude_patterns=None):
     try:
-        output = run_command(['python3', '01_crawl.py', url])
+        # Construire la commande avec les patterns d'exclusion
+        command = ['python3', '01_crawl.py', url]
+        if exclude_patterns:
+            command.extend(exclude_patterns)
+        output = run_command(command)
         crawl_id_line = [line for line in output.split('\n') if line.startswith('Crawl terminé. ID du crawl:')]
         if crawl_id_line:
             return crawl_id_line[0].split(': ')[1]
@@ -115,27 +128,56 @@ def run_crawl(url):
         logging.error(f"Crawl failed with error code {e.returncode}")
     return None
 
-def run_internal_links_crawl(crawl_id, selector):
+def run_internal_links_crawl(crawl_id, selector, exclude_patterns=None):
     try:
-        run_command(['python3', '03_crawl_internal_links.py', crawl_id, selector])
+        command = ['python3', '03_crawl_internal_links.py', crawl_id, selector]
+        if exclude_patterns:
+            command.extend(['-e'] + exclude_patterns)
+        run_command(command)
     except subprocess.CalledProcessError as e:
         logging.error(f"Internal links crawl failed with error code {e.returncode}")
 
-def run_analysis(crawl_id):
+def run_analysis(crawl_id, disable_clustering=False):
     try:
-        run_command(['python3', '02_analyse.py', crawl_id])
+        command = ['python3', '02_analyse.py', crawl_id]
+        if disable_clustering:
+            command.append('--no-cluster')
+        run_command(command)
     except subprocess.CalledProcessError as e:
         logging.error(f"Analysis failed with error code {e.returncode}")
-  
+
+
+
 def main(url=None, selector=None):
     parser = setup_argument_parser()
+    
+    # Initialiser les variables avec des valeurs par défaut
+    exclude_patterns = []
+    disable_clustering = False
     
     # Si les arguments ne sont pas fournis directement, les prendre des args du parser
     if url is None:
         args = parser.parse_args()
         url = args.url
         selector = args.selector  # Peut être None si non spécifié
-    
+        exclude_patterns = args.exclude_patterns
+        disable_clustering = args.no_cluster
+    else:
+        # Si url est fourni directement, on prend les arguments de sys.argv
+        if len(sys.argv) > 3:  # Si des arguments supplémentaires sont fournis
+            i = 3
+            while i < len(sys.argv):
+                if sys.argv[i] == '-e' or sys.argv[i] == '--exclude-patterns':
+                    i += 1
+                    while i < len(sys.argv) and not sys.argv[i].startswith('-'):
+                        exclude_patterns.append(sys.argv[i])
+                        i += 1
+                elif sys.argv[i] == '--no-cluster':
+                    disable_clustering = True
+                    i += 1
+                else:
+                    i += 1
+
     if not validate_url(url):
         logging.error(f"URL invalide: {url}")
         logging.info("L'URL doit commencer par http:// ou https://")
@@ -155,24 +197,31 @@ def main(url=None, selector=None):
     os.environ["HUGGINGFACEHUB_API_TOKEN"] = config["HUGGINGFACEHUB_API_TOKEN"]
 
     logging.info("🔄 Démarrage du crawl...")
-    crawl_id = run_crawl(url)
+    crawl_id = run_crawl(url, exclude_patterns)  # Passage des patterns d'exclusion
     if not crawl_id:
         logging.error("❌ Échec du crawl")
         return
 
     logging.info(f"✅ Crawl terminé avec l'ID: {crawl_id}")
-    
+
     # Message adaptatif pour l'analyse des liens
     if selector:
         logging.info(f"🔍 Analyse des liens internes dans la zone sélectionnée...")
     else:
         logging.info(f"🔍 Analyse des liens internes sur toute la page...")
     
-    run_internal_links_crawl(crawl_id, selector)
+    # Si des patterns sont à exclure, on le signale dans les logs
+    if exclude_patterns:
+        logging.info(f"🔍 Filtrage des URLs contenant : {exclude_patterns}")
 
+    # Un seul appel à run_internal_links_crawl avec les patterns d'exclusion
+    run_internal_links_crawl(crawl_id, selector, exclude_patterns)
     logging.info("✅ Analyse des liens terminée")
+
     logging.info("🧠 Démarrage de l'analyse sémantique...")
-    run_analysis(crawl_id)
+    if disable_clustering:
+        logging.info("ℹ️ Clusterisation désactivée")
+    run_analysis(crawl_id, disable_clustering)
 
     # Message de fin avec information sur la portée de l'analyse
     scope = "la zone sélectionnée" if selector else "toute la page"
@@ -183,6 +232,7 @@ def main(url=None, selector=None):
     • URL analysée : {url}
     • Portée : {scope}
     • ID du crawl : {crawl_id}
+    • Patterns exclus : {exclude_patterns if exclude_patterns else "Aucun"}
     
     Pour visualiser les résultats :
     1. Ouvrez votre navigateur

@@ -127,61 +127,126 @@ class GraphRenderer {
     }
     
     createLinks(g, links) {
-        // Calcul préalable du nombre de liens entrants/sortants pour chaque nœud
+        // Calculer d'abord les liens par nœud
         const linkCounts = new Map();
         links.forEach(link => {
-            if (!linkCounts.has(link.source.id)) {
-                linkCounts.set(link.source.id, { outgoing: 0, incoming: 0 });
+            // Assurer que source et target sont des objets
+            const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+            const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+            
+            if (!linkCounts.has(sourceId)) {
+                linkCounts.set(sourceId, { outgoing: 0, incoming: 0 });
             }
-            if (!linkCounts.has(link.target.id)) {
-                linkCounts.set(link.target.id, { outgoing: 0, incoming: 0 });
+            if (!linkCounts.has(targetId)) {
+                linkCounts.set(targetId, { outgoing: 0, incoming: 0 });
             }
-            linkCounts.get(link.source.id).outgoing++;
-            linkCounts.get(link.target.id).incoming++;
+            linkCounts.get(sourceId).outgoing++;
+            linkCounts.get(targetId).incoming++;
         });
+    
+        // Ajouter les marqueurs de flèche
+        const svg = g.ownerSVGElement;
+        if (svg) {
+            this.addArrowMarkers(svg);
+        }
     
         return g.append("g")
             .attr("class", "links")
+            .lower() // Mettre les liens en arrière-plan
             .selectAll("line")
             .data(links)
             .join("line")
             .attr("class", "link-line")
             .attr("stroke", d => {
-                // Un lien est considéré comme "fort" s'il fait partie d'une relation bidirectionnelle
-                const isReciprocal = links.some(l => 
-                    (l.source.id === d.target.id && l.target.id === d.source.id)
-                );
+                // Obtenir les IDs de source et target de manière sûre
+                const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+    
+                // Vérifier s'il y a un lien réciproque
+                const isReciprocal = links.some(l => {
+                    const lSourceId = typeof l.source === 'object' ? l.source.id : l.source;
+                    const lTargetId = typeof l.target === 'object' ? l.target.id : l.target;
+                    return lSourceId === targetId && lTargetId === sourceId;
+                });
+    
                 if (isReciprocal) {
-                    return "#4a90e2"; // Bleu pour les liens bidirectionnels
+                    return "#4a90e2"; // bleu pour les liens bidirectionnels
                 }
-                // Sinon on regarde le ratio entrant/sortant
-                const sourceCounts = linkCounts.get(d.source.id);
-                if (sourceCounts.outgoing > sourceCounts.incoming) {
-                    return "#2ecc71"; // Vert pour les liens sortants dominants
+    
+                // Obtenir les statistiques des liens
+                const sourceCounts = linkCounts.get(sourceId);
+                if (sourceCounts && sourceCounts.outgoing > sourceCounts.incoming) {
+                    return "#2ecc71"; // vert pour les liens sortants dominants
                 } else {
-                    return "#e74c3c"; // Rouge pour les liens entrants dominants
+                    return "#e74c3c"; // rouge pour les liens entrants dominants
                 }
             })
             .attr("stroke-opacity", 0.6)
-            .attr("stroke-width", d => Math.sqrt(d.value))
-            .attr("marker-end", "url(#arrowhead)");
+            .attr("stroke-width", d => Math.sqrt(d.value || 1))
+            .attr("marker-end", d => {
+                // Déterminer le type de flèche en fonction de la couleur du lien
+                const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                
+                const isReciprocal = links.some(l => {
+                    const lSourceId = typeof l.source === 'object' ? l.source.id : l.source;
+                    const lTargetId = typeof l.target === 'object' ? l.target.id : l.target;
+                    return lSourceId === targetId && lTargetId === sourceId;
+                });
+    
+                if (isReciprocal) {
+                    return "url(#arrowhead-blue)";
+                }
+                
+                const sourceCounts = linkCounts.get(sourceId);
+                if (sourceCounts && sourceCounts.outgoing > sourceCounts.incoming) {
+                    return "url(#arrowhead-green)";
+                }
+                return "url(#arrowhead-red)";
+            });
     }
 
+    
     addArrowMarkers(svg) {
-        svg.selectAll("defs").remove();
+        if (!svg) {
+            console.error("SVG element is required for adding markers");
+            return;
+        }
+    
+        // Supprimer les anciens marqueurs s'ils existent
+        const oldDefs = svg.querySelector("defs");
+        if (oldDefs) {
+            oldDefs.remove();
+        }
+    
+        // Créer un nouvel élément defs
+        const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        svg.appendChild(defs);
         
-        svg.append("defs")
-            .append("marker")
-            .attr("id", "arrowhead")
-            .attr("viewBox", "-10 -5 20 10")
-            .attr("refX", 15)  // Ajusté pour correspondre au rayon du nœud
-            .attr("refY", 0)
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 6)
-            .attr("orient", "auto")
-            .append("path")
-            .attr("d", "M -10,-5 L 0,0 L -10,5")
-            .attr("fill", "#999");
+        // Créer trois marqueurs différents pour chaque couleur de lien
+        const colors = {
+            'blue': '#4a90e2',
+            'green': '#2ecc71',
+            'red': '#e74c3c'
+        };
+    
+        Object.entries(colors).forEach(([key, color]) => {
+            const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+            marker.setAttribute("id", `arrowhead-${key}`);
+            marker.setAttribute("viewBox", "-10 -5 20 10");
+            marker.setAttribute("refX", "25"); // Augmenter cette valeur pour éloigner la flèche
+            marker.setAttribute("refY", "0");
+            marker.setAttribute("markerWidth", "6");
+            marker.setAttribute("markerHeight", "6");
+            marker.setAttribute("orient", "auto");
+    
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", "M -10,-5 L 0,0 L -10,5");
+            path.setAttribute("fill", color);
+    
+            marker.appendChild(path);
+            defs.appendChild(marker);
+        });
     }
       
 
@@ -282,6 +347,7 @@ class GraphRenderer {
             event.subject.fy = null;
         }
 
+        
         createNodes(g, nodes, nodeScale, incomingLinksCount) {
             const node = g.append("g")
                 .attr("class", "nodes")
@@ -295,12 +361,31 @@ class GraphRenderer {
                     .on("start", this.dragstarted)
                     .on("drag", this.dragged)
                     .on("end", this.dragended))
+                .on("click", (event, d) => {
+                    // Si ctrl est pressé, ouvrir l'URL dans un nouvel onglet
+                    if (event.ctrlKey) {
+                        window.open(d.url, '_blank');
+                    }
+                })
                 .on("contextmenu", (event, d) => {
                     event.preventDefault();
                     this.showContextMenu(event, d);
                 })
                 .on("mouseover", (event, d) => this.tooltipManager.show(event, d, incomingLinksCount))
                 .on("mouseout", () => this.tooltipManager.hide());
+        
+            // Ajouter un style de curseur pointer lors du ctrl enfoncé
+            document.addEventListener('keydown', (event) => {
+                if (event.ctrlKey) {
+                    node.style('cursor', 'pointer');
+                }
+            });
+        
+            document.addEventListener('keyup', (event) => {
+                if (!event.ctrlKey) {
+                    node.style('cursor', 'default');
+                }
+            });
         
                 // Ajout des cercles avec effet de lueur
             node.append("circle")

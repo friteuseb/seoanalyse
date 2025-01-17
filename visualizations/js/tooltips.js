@@ -18,6 +18,7 @@ class TooltipManager {
         
         this.tooltip.html(`
             <strong>${d.label}</strong><br>
+            URL: <span style="color: #4a90e2">${d.url}</span><br>
             Liens entrants: ${linksIn}<br>
             Liens sortants: ${linksOut}<br>
             Cluster: ${d.group}<br>

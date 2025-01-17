@@ -5,45 +5,25 @@ ini_set('display_errors', 0);
 header('Content-Type: application/json');
 
 function normalizeUrl($url) {
-    // Retire le protocole (http:// ou https://)
     $url = preg_replace('#^https?://#', '', $url);
-    
-    // Retire les slashes de fin
     $url = rtrim($url, '/');
-    
-    // Retire les paramètres d'URL (tout ce qui suit ?)
     $url = preg_replace('/\?.*$/', '', $url);
-    
-    // Retire les ancres (tout ce qui suit #)
     $url = preg_replace('/#.*$/', '', $url);
-    
-    // Convertit en minuscules pour une comparaison insensible à la casse
     $url = strtolower($url);
-    
-    // Remplace les doubles slashes par des simples
     $url = preg_replace('#/+#', '/', $url);
-    
-    // Retire index.php, index.html, etc.
     $url = preg_replace('/\/index\.(php|html|htm)$/', '', $url);
-    
     return $url;
 }
 
 function getDisplayLabel($url) {
-    // Extrait le dernier segment de l'URL pour l'affichage
     $path = parse_url($url, PHP_URL_PATH);
     if (!$path) return $url;
     
     $segments = explode('/', trim($path, '/'));
     $lastSegment = end($segments);
-    
-    // Retire les extensions courantes
     $lastSegment = preg_replace('/\.(html|htm|php)$/', '', $lastSegment);
-    
-    // Remplace les tirets et underscores par des espaces
     $lastSegment = str_replace(['-', '_'], ' ', $lastSegment);
     
-    // Limite la longueur pour l'affichage
     if (strlen($lastSegment) > 50) {
         $lastSegment = substr($lastSegment, 0, 47) . '...';
     }
@@ -59,9 +39,18 @@ try {
         throw new Exception('No graph specified');
     }
 
-    $redis = get_redis_connection();
-    if (!$redis) {
-        throw new Exception('Redis connection failed');
+    try {
+        $redis = get_redis_connection();
+        if (!$redis) {
+            throw new Exception('Impossible d\'établir la connexion Redis');
+        }
+        
+        // Test de la connexion
+        $redis->ping();
+        error_log("Connexion Redis établie avec succès");
+    } catch (Exception $e) {
+        error_log("Erreur de connexion Redis : " . $e->getMessage());
+        throw new Exception('Redis connection failed: ' . $e->getMessage());
     }
 
     $pattern = str_replace(['_simple_graph', '_clustered_graph'], ':doc:*', $graph);
@@ -78,7 +67,7 @@ try {
     $links = [];
     $urlToId = [];
     $nodeId = 0;
-    $urlMapping = []; // Pour stocker la correspondance entre URLs normalisées et originales
+    $urlMapping = [];
 
     // Premier passage : création des nœuds
     foreach ($keys as $key) {
@@ -91,7 +80,6 @@ try {
             $originalUrl = $doc['url'];
             $normalizedUrl = normalizeUrl($originalUrl);
             
-            // Évite les doublons d'URLs normalisées
             if (isset($urlMapping[$normalizedUrl])) {
                 continue;
             }
@@ -128,7 +116,6 @@ try {
                     $normalizedTargetUrl = normalizeUrl($targetUrl);
                     
                     if (isset($urlToId[$sourceUrl], $urlToId[$normalizedTargetUrl])) {
-                        // Vérifie si le lien n'existe pas déjà
                         $linkExists = false;
                         foreach ($links as $existingLink) {
                             if ($existingLink['source'] === $urlToId[$sourceUrl] && 
@@ -177,4 +164,3 @@ try {
     echo json_encode($error);
     exit;
 }
-?>

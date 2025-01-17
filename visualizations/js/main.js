@@ -42,28 +42,45 @@ class AppManager {
 
     loadAvailableGraphs() {
         fetch('get_available_graphs.php')
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) throw new Error(data.error);
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && Array.isArray(data.graphs)) {
+                // Utiliser data.graphs au lieu de data directement
+                const graphSelect = document.getElementById('graphSelect');
+                graphSelect.innerHTML = '';
                 
-                const graphKeys = data.filter(key => 
-                    key.includes('_simple_graph') || key.includes('_clustered_graph')
-                );
+                // Ajouter une option par défaut
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Sélectionnez un graphe...';
+                graphSelect.appendChild(defaultOption);
 
-                this.graphSelect.innerHTML = '<option value="">Sélectionnez un graphe</option>';
-                
-                graphKeys.forEach(graph => {
+                data.graphs.forEach(graph => {
                     const option = document.createElement('option');
-                    option.value = graph;
-                    option.textContent = graph;
-                    this.graphSelect.appendChild(option);
+                    option.value = graph.id + '_' + graph.type + '_graph';
+                    
+                    // Construire un libellé informatif
+                    let label = `${graph.id.split('___')[0]} `;
+                    label += `(${graph.type})`;
+                    if (graph.created) {
+                        label += ` - ${new Date(graph.created).toLocaleDateString()}`;
+                    }
+                    if (graph.nodes && graph.links) {
+                        label += ` - ${graph.nodes} nœuds, ${graph.links} liens`;
+                    }
+                    
+                    option.textContent = label;
+                    graphSelect.appendChild(option);
                 });
-            })
-            .catch(error => {
-                console.error('Erreur de chargement:', error);
-                showError(`Erreur de chargement des graphes: ${error.message}`);
-                this.graphSelect.innerHTML = '<option value="">Erreur de chargement</option>';
-            });
+            } else {
+                throw new Error('Invalid graph data format');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur de chargement des graphes:', error);
+            showError('Erreur lors du chargement des graphes disponibles');
+        });
+
     }
 
     loadGraph(graphId) {

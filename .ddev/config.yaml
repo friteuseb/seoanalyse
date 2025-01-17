@@ -20,7 +20,18 @@ web_environment:
 
 services:
   redis:
-    type: redis:6
+    type: redis:latest
+    volumes:
+      - redis-data:/data
+    hostnames:
+      - redis
+    exposed_ports:
+      - port: 6379
+        protocol: tcp
+volumes:
+  redis-data:
+    name: "${DDEV_SITENAME}-redis-data"
+    external: false
 hooks:
   post-start:
     - exec: |

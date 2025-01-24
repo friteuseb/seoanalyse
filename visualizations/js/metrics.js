@@ -1,7 +1,7 @@
 class MetricsManager {
     constructor(graphRenderer) {
         this.graphRenderer = graphRenderer;
-        this.metricsPanel = document.querySelector('.metrics-panel');
+        this.metricsPanel = document.querySelector('#draggable-metrics-panel');
     }
 
     updateMetricsDisplay() {
@@ -9,43 +9,34 @@ class MetricsManager {
         
         const metrics = this.calculateMetrics();
         
-        // Mise à jour des valeurs
-        this.metricsPanel.querySelector('.nodes-count').textContent = metrics.nodesCount || '-';
-        this.metricsPanel.querySelector('.links-count').textContent = metrics.linksCount || '-';
-        this.metricsPanel.querySelector('.density').textContent = 
-            metrics.density ? `${(metrics.density * 100).toFixed(1)}%` : '-';
-        this.metricsPanel.querySelector('.avg-depth').textContent = 
-            metrics.avgDepth ? metrics.avgDepth.toFixed(1) : '-';
-        this.metricsPanel.querySelector('.orphan-count').textContent = 
-            `${metrics.orphanCount || 0} (${metrics.orphanPercentage?.toFixed(1)}%)`;
-        this.metricsPanel.querySelector('.components').textContent = metrics.components || '-';
-        this.metricsPanel.querySelector('.bidirectional').textContent = 
-            `${metrics.bidirectionalCount || 0} (${metrics.bidirectionalPercentage?.toFixed(1)}%)`;
-        this.metricsPanel.querySelector('.clustering').textContent = 
-            metrics.clustering ? metrics.clustering.toFixed(3) : '-';
-    }
-
-
-    updateMetricsDisplay() {
-        const metrics = this.calculateMetrics();
-        
-        if (this.metricsPanel) {
+        try {
             // Mise à jour des valeurs
-            this.metricsPanel.querySelector('.nodes-count').textContent = metrics.nodesCount || '-';
-            this.metricsPanel.querySelector('.links-count').textContent = metrics.linksCount || '-';
-            this.metricsPanel.querySelector('.density').textContent = 
-                metrics.density ? `${(metrics.density * 100).toFixed(1)}%` : '-';
-            this.metricsPanel.querySelector('.avg-depth').textContent = 
-                metrics.avgDepth ? metrics.avgDepth.toFixed(1) : '-';
-            this.metricsPanel.querySelector('.orphan-count').textContent = 
-                `${metrics.orphanCount || 0} (${metrics.orphanPercentage?.toFixed(1)}%)`;
-            this.metricsPanel.querySelector('.components').textContent = metrics.components || '-';
-            this.metricsPanel.querySelector('.bidirectional').textContent = 
-                `${metrics.bidirectionalCount || 0} (${metrics.bidirectionalPercentage?.toFixed(1)}%)`;
-            this.metricsPanel.querySelector('.clustering').textContent = 
-                metrics.clustering ? metrics.clustering.toFixed(3) : '-';
+            this.updateMetricValue('.nodes-count', metrics.nodesCount || '-');
+            this.updateMetricValue('.links-count', metrics.linksCount || '-');
+            this.updateMetricValue('.density', 
+                metrics.density ? `${(metrics.density * 100).toFixed(1)}%` : '-');
+            this.updateMetricValue('.avg-depth', 
+                metrics.avgDepth ? metrics.avgDepth.toFixed(1) : '-');
+            this.updateMetricValue('.orphan-count', 
+                `${metrics.orphanCount || 0} (${metrics.orphanPercentage?.toFixed(1)}%)`);
+            this.updateMetricValue('.components', metrics.components || '-');
+            this.updateMetricValue('.bidirectional', 
+                `${metrics.bidirectionalCount || 0} (${metrics.bidirectionalPercentage?.toFixed(1)}%)`);
+            this.updateMetricValue('.clustering', 
+                metrics.clustering ? metrics.clustering.toFixed(3) : '-');
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour des métriques:', error);
         }
     }
+
+    // Méthode utilitaire pour mettre à jour une métrique de manière sécurisée
+    updateMetricValue(selector, value) {
+        const element = this.metricsPanel.querySelector(selector);
+        if (element) {
+            element.textContent = value;
+        }
+    }
+
 
     calculateMetrics() {
         const data = this.graphRenderer.data;

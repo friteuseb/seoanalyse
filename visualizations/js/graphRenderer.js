@@ -512,8 +512,8 @@ class GraphRenderer {
         
         
         createLegend(svg, data) {
-            // Sélectionner le conteneur de légende
-            const legendContainer = d3.select(".legend-container");
+            // Sélectionner uniquement le contenu du panneau déplaçable
+            const legendContainer = d3.select("#draggable-legend-panel .panel-content");
             legendContainer.selectAll("*").remove();
         
             // Titre principal

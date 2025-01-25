@@ -1,68 +1,104 @@
 class GraphRenderer {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
-        // Définir des dimensions plus grandes pour capturer tout le graphe
-        this.width = Math.max(this.container.clientWidth * 2, 3000);  // valeur minimum de 3000px
+        this.width = Math.max(this.container.clientWidth * 2, 3000);
         this.height = Math.max(this.container.clientHeight * 2, 3000);
         this.simulation = null;
         this.tooltipManager = new TooltipManager();
         this.filterManager = null;
         this.data = null;
+        this.nodeScale = null; // Déclarer nodeScale comme propriété
     }
-
-
 
     render(data) {
         this.data = data;
         const svg = this.initializeSVG();
-        const g = svg.select("g");  // Sélectionne le groupe créé dans initializeSVG
-        
+        const g = svg.select("g");
+    
+        // Calculer incomingLinksCount
+        const incomingLinksCount = this.calculateIncomingLinks(data.links);
+    
+        // Initialiser nodeScale
+        this.nodeScale = d3.scaleLinear()
+            .domain([0, d3.max(Object.values(incomingLinksCount)) || 1])
+            .range([CONFIG.nodeMinSize, CONFIG.nodeMaxSize]);
+    
         this.addArrowMarkers(svg);
-        
+    
         // Configuration de la simulation avant création des éléments
         this.setupSimulation(data);
-        
+    
         // Création des éléments
         const elements = this.createElements(g, data);
-        
+    
         // Configuration des forces et démarrage
         this.setupSimulationForces(elements.node, elements.link);
-        this.simulation.alpha(1).restart();
-        
+    
+        // Forcer la simulation à démarrer
+        this.simulation.alphaTarget(0.3).restart(); // Relance la simulation avec une alphaTarget élevée
+        setTimeout(() => {
+            this.simulation.alphaTarget(0); // Réduit l'alphaTarget après un court délai
+        }, 1000); // Ajustez ce délai si nécessaire
+    
         // Création de la légende
         this.createLegend(svg, data);
-        
+    
         // Configuration des filtres
         this.filterManager = new FilterManager(elements.node, elements.link, data);
+    
         // Mettre à jour la minimap après le rendu
         if (this.minimapManager) {
             this.minimapManager.createMinimap();
         }
+
+        // Forcer la simulation à se stabiliser
+        this.simulation.alphaTarget(0.1).restart(); // Relance la simulation
+        setTimeout(() => {
+            this.simulation.alphaTarget(0); // Arrête la simulation après un court délai
+        }, 500); // Ajustez ce délai si nécessaire
+    
+        // Création de la légende
+        this.createLegend(svg, data);
+    
+        // Configuration des filtres
+        this.filterManager = new FilterManager(elements.node, elements.link, data);
+    
+        // Mettre à jour la minimap après le rendu
+        if (this.minimapManager) {
+            this.minimapManager.createMinimap();
+        }
+    }
+
+
+setupSimulation(data) {
+    if (this.simulation) {
+        this.simulation.stop();
+    }
+
+    const centerX = 0;
+    const centerY = 0;
+
+    // Calculer incomingLinksCount
+    const incomingLinksCount = this.calculateIncomingLinks(data.links);
+
+    this.simulation = d3.forceSimulation(data.nodes)
+        .force("link", d3.forceLink()
+            .id(d => d.id)
+            .links(data.links)
+            .distance(100))
+        .force("charge", d3.forceManyBody()
+            .strength(-800))
+        .force("center", d3.forceCenter(centerX, centerY))
+        .force("collide", d3.forceCollide().radius(d => this.nodeScale(incomingLinksCount[d.id] || 0) + 10)) // Ajustez le rayon de collision
+        .velocityDecay(0.6);
+
+    this.simulation.on("end", () => {
+        console.log("Simulation stabilisée");
+    });
+
+    return this.simulation;
 }
 
-
-    
-    setupSimulation(data) {
-        if (this.simulation) {
-            this.simulation.stop();
-        }
-
-        const centerX = 0;
-        const centerY = 0;
-        
-        this.simulation = d3.forceSimulation(data.nodes)
-            .force("link", d3.forceLink()
-                .id(d => d.id)
-                .links(data.links)
-                .distance(100))
-            .force("charge", d3.forceManyBody()
-                .strength(-800))
-            .force("center", d3.forceCenter(centerX, centerY))
-            .force("collide", d3.forceCollide().radius(30))
-            .velocityDecay(0.6);
-
-        return this.simulation;
-    }
 
     setupSimulationForces(node, link) {
         if (!this.simulation) return;
@@ -362,7 +398,6 @@ class GraphRenderer {
                     .on("drag", this.dragged)
                     .on("end", this.dragended))
                 .on("click", (event, d) => {
-                    // Si ctrl est pressé, ouvrir l'URL dans un nouvel onglet
                     if (event.ctrlKey) {
                         window.open(d.url, '_blank');
                     }
@@ -374,25 +409,16 @@ class GraphRenderer {
                 .on("mouseover", (event, d) => this.tooltipManager.show(event, d, incomingLinksCount))
                 .on("mouseout", () => this.tooltipManager.hide());
         
-            // Ajouter un style de curseur pointer lors du ctrl enfoncé
-            document.addEventListener('keydown', (event) => {
-                if (event.ctrlKey) {
-                    node.style('cursor', 'pointer');
-                }
-            });
-        
-            document.addEventListener('keyup', (event) => {
-                if (!event.ctrlKey) {
-                    node.style('cursor', 'default');
-                }
-            });
-        
-                // Ajout des cercles avec effet de lueur
+            // Création des cercles avec une taille basée sur incomingLinksCount
             node.append("circle")
-                .attr("r", d => nodeScale(incomingLinksCount[d.id] || 0))
-                .attr("fill", d => getColor(d.group))
-                .attr("stroke", d => d3.color(getColor(d.group)).brighter(0.5))
-                .attr("stroke-width", 2)
+                .attr("r", d => {
+                    const count = incomingLinksCount[d.id] || 0;
+                    console.log(`Node ${d.id} has ${count} incoming links`); // Debug
+                    return nodeScale(count);
+                })
+                .attr("fill", "#1E90FF") // Bleu électrique
+                .attr("stroke", "#104E8B") // Contour plus foncé
+                .attr("stroke-width", 2) // Épaisseur du contour
                 .style("filter", "url(#glow)"); // Effet de lueur
         
             // Ajout des labels
@@ -405,6 +431,8 @@ class GraphRenderer {
                 .style("fill", "#fff");
         
             return node;
+
+            
         }
 
 

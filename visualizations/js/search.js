@@ -54,7 +54,7 @@ class SearchManager {
             
             node.select('circle')
                 .style('filter', matches && searchTerm ? 'url(#searchGlow)' : null)
-                .style('stroke', matches && searchTerm ? '#2ecc71' : null)
+                .style('stroke', matches && searchTerm ? '#f39c12' : null)
                 .style('stroke-width', matches && searchTerm ? '3px' : '1px');
         });
     }

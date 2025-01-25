@@ -2,22 +2,7 @@ class SearchManager {
     constructor(graphRenderer) {
         this.graphRenderer = graphRenderer;
         this.searchInput = document.getElementById('nodeSearch');
-        if (!this.searchInput) {
-            this.createSearchInterface();
-        }
         this.initializeEventListeners();
-    }
-
-    createSearchInterface() {
-        const controls = document.getElementById('controls');
-        const searchContainer = document.createElement('div');
-        searchContainer.className = 'search-container';
-        searchContainer.innerHTML = `
-            <input type="text" id="nodeSearch" placeholder="Rechercher une page...">
-            <div class="search-results"></div>
-        `;
-        controls.appendChild(searchContainer);
-        this.searchInput = document.getElementById('nodeSearch');
     }
 
     initializeEventListeners() {
@@ -26,28 +11,51 @@ class SearchManager {
         }
     }
 
-    handleSearch() {
-        const searchTerm = this.searchInput.value.toLowerCase();
-        if (!this.graphRenderer || !this.graphRenderer.node) return;
-
-        this.graphRenderer.node.style('opacity', d => 
-            d.label.toLowerCase().includes(searchTerm) ? 1 : 0.1
-        );
-
-        this.graphRenderer.link.style('opacity', d => {
-            const sourceMatch = d.source.label.toLowerCase().includes(searchTerm);
-            const targetMatch = d.target.label.toLowerCase().includes(searchTerm);
-            return (sourceMatch || targetMatch) ? 0.6 : 0.1;
-        });
-    }
-
     reset() {
         if (this.searchInput) {
             this.searchInput.value = '';
         }
-        if (this.graphRenderer) {
-            this.graphRenderer.node?.style('opacity', 1);
-            this.graphRenderer.link?.style('opacity', 0.6);
+        if (this.graphRenderer && this.graphRenderer.node) {
+            this.graphRenderer.node.style('opacity', 1);
+            this.graphRenderer.link.style('opacity', 0.6);
         }
+    }
+
+    handleSearch() {
+        const searchTerm = this.searchInput.value.toLowerCase();
+        if (!this.graphRenderer || !this.graphRenderer.node) return;
+    
+        // Définir le filtre de halo s'il n'existe pas déjà
+        const svg = d3.select('#graph svg');
+        if (!svg.select('#glow').size()) {
+            const filter = svg.append('defs')
+                .append('filter')
+                .attr('id', 'searchGlow')
+                .attr('x', '-50%')
+                .attr('y', '-50%')
+                .attr('width', '200%')
+                .attr('height', '200%');
+    
+            filter.append('feGaussianBlur')
+                .attr('stdDeviation', '3')
+                .attr('result', 'coloredBlur');
+    
+            const feMerge = filter.append('feMerge');
+            feMerge.append('feMergeNode')
+                .attr('in', 'coloredBlur');
+            feMerge.append('feMergeNode')
+                .attr('in', 'SourceGraphic');
+        }
+    
+        this.graphRenderer.node.each(function(d) {
+            const node = d3.select(this);
+            const label = d.label ? d.label.toLowerCase() : '';
+            const matches = label.includes(searchTerm);
+            
+            node.select('circle')
+                .style('filter', matches && searchTerm ? 'url(#searchGlow)' : null)
+                .style('stroke', matches && searchTerm ? '#2ecc71' : null)
+                .style('stroke-width', matches && searchTerm ? '3px' : '1px');
+        });
     }
 }

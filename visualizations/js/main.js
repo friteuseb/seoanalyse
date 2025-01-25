@@ -31,10 +31,6 @@ class AppManager {
             this.loadGraph(this.graphSelect.value);
         });
 
-        this.resetViewButton.addEventListener('click', () => {
-            this.graphRenderer.resetView();
-        });
-
         window.addEventListener('resize', () => {
             this.graphRenderer.resize();
         });

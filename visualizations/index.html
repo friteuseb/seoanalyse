@@ -438,6 +438,24 @@
     top: 100px;
     right: 340px;
 }
+#graphSelect {
+    width: 200px;
+    padding: 5px;
+}
+
+
+#loadGraph {
+   padding: 5px 10px;
+   width: auto;
+   display: inline-block;
+}
+
+#controls {
+   display: flex;
+   gap: 10px;
+   align-items: center;
+   flex-wrap: wrap;
+}
 
    </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -446,16 +464,10 @@
     <div id="controls">
         <select id="graphSelect"></select>
         <button id="loadGraph">Charger le graphe</button>
-        <button id="resetView">Recentrer</button>
+
     
         <div class="search-controls">
             <input type="text" id="nodeSearch" placeholder="Rechercher une page...">
-            <select id="filterType">
-                <option value="all">Tous les liens</option>
-                <option value="incoming">Liens entrants seulement</option>
-                <option value="outgoing">Liens sortants seulement</option>
-                <option value="bidirectional">Liens bidirectionnels</option>
-            </select>
             <input type="number" id="minLinks" placeholder="Liens minimum">
             <input type="number" id="maxDepth" placeholder="Profondeur max">
         </div>
@@ -466,7 +478,6 @@
             <button id="exportSVG-dark" onclick="window.app.exportManager.exportSVG(true)">SVG (Fond noir)</button>
             <button id="exportPNG" onclick="window.app.exportManager.exportPNG(false)">PNG (Transparent)</button>
             <button id="exportPNG-dark" onclick="window.app.exportManager.exportPNG(true)">PNG (Fond noir)</button>
-            <button id="shareView">Partager</button>
             <button id="downloadData">Télécharger données</button>
         </div>
     </div>

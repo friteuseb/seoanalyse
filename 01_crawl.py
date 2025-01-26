@@ -9,6 +9,8 @@ import requests
 from xml.etree import ElementTree as ET
 import os
 from pathlib import Path
+from sitemap_handler import SitemapHandler
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -168,38 +170,49 @@ def get_urls_from_sitemap(base_url, exclude_patterns=None):
     
     return sitemap_urls
 
+
+
 def crawl_web(url, exclude_patterns=None):
     """Fonction principale pour le crawl web"""
     cleaned_url = url.split('//')[1].replace(':', '_').replace('.', '_').replace('/', '_')
     crawl_id = f"{cleaned_url}__{str(uuid.uuid4())}"
-    
-    # Récupérer et filtrer les URLs du sitemap
-    urls = get_urls_from_sitemap(url, exclude_patterns)
-    
+
+    # Initialiser le SitemapHandler
+    sitemap_handler = SitemapHandler(base_url=url)
+    if exclude_patterns:
+        sitemap_handler.add_exclude_patterns(exclude_patterns)
+
+    # Découvrir les URLs
+    urls = sitemap_handler.discover_urls()
+    if not urls:
+        logging.error(f"❌ Aucun sitemap trouvé pour {url}. Fin du processus.")
+        return None
+
     stored_pages = 0
     total_urls = len(urls)
-    
+
     logging.info(f"""
     🌐 Démarrage du crawl web:
     • URL de base: {url}
     • URLs à traiter: {total_urls}
     """)
-    
+
     for current_url in urls:
         content = crawl_url(current_url)
         if content:
             save_to_redis(current_url, content, crawl_id)
             stored_pages += 1
-        
+
         # Afficher la progression
         if stored_pages % 10 == 0 or stored_pages == total_urls:
-            progress = (stored_pages/total_urls) * 100
+            progress = (stored_pages / total_urls) * 100
             logging.info(f"""
             📊 Progression: {stored_pages}/{total_urls} ({progress:.1f}%)
             ✅ Pages stockées: {stored_pages}
             """)
-    
+
     return crawl_id
+
 
 def crawl_local(path):
     """Fonction principale pour le crawl local."""

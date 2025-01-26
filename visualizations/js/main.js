@@ -7,20 +7,24 @@ class AppManager {
         this.resetViewButton = document.getElementById('resetView');
 
         
+
         // Initialisation des managers de fonctionnalités
         this.metricsManager = new MetricsManager(this.graphRenderer);
+        // Établir la liaison bidirectionnelle
+        this.graphRenderer.setMetricsManager(this.metricsManager);
         this.searchManager = new SearchManager(this.graphRenderer);
         this.layoutManager = new LayoutManager(this.graphRenderer);
         this.exportManager = new ExportManager(this.graphRenderer);
         // Passer le graphRenderer à la minimap
-        this.minimapManager = new MinimapManager(this.graphRenderer);
+        //this.minimapManager = new MinimapManager(this.graphRenderer);
         // Ajouter la référence dans le graphRenderer
-        this.graphRenderer.minimapManager = this.minimapManager;
+        //this.graphRenderer.minimapManager = this.minimapManager;
         
         this.setupEventListeners();
         this.loadAvailableGraphs();
     }
 
+    
     setupEventListeners() {
         // Évènements de base
         this.graphSelect.addEventListener('change', () => {
@@ -81,24 +85,29 @@ class AppManager {
 
     loadGraph(graphId) {
         if (!graphId) return;
-
+    
         fetch(`get_graph_data.php?graph=${graphId}`)
             .then(response => response.json())
             .then(data => {
                 console.log("Received data from server:", data);
                 console.log("Number of nodes:", data.nodes.length);
                 console.log("Number of links:", data.links.length);
-                
-                // Rendu du graphe
+    
+                // Rendu du graphe principal
                 this.graphRenderer.render(data);
-                
+    
                 // Mise à jour des managers
                 this.metricsManager.updateMetricsDisplay();
-                this.minimapManager.createMinimap();
                 this.searchManager.reset();
                 this.layoutManager.setDefaultLayout();
-                this.minimapManager.createMinimap(); 
-
+    
+                // Démarrer la simulation du graphe principal
+                this.graphRenderer.simulation.alphaTarget(0.3).restart();
+    
+                // Créer la minimap après un court délai pour éviter les conflits
+               // setTimeout(() => {
+                //    this.minimapManager.createMinimap();
+               // }, 50000); // Délai de 500 ms pour laisser le graphe se stabiliser
             })
             .catch(error => {
                 console.error('Error loading graph:', error);

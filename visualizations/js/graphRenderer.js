@@ -7,119 +7,125 @@ class GraphRenderer {
         this.tooltipManager = new TooltipManager();
         this.filterManager = null;
         this.data = null;
-        this.nodeScale = null; // Déclarer nodeScale comme propriété
+        this.nodeScale = null; 
+        this.metricsManager = null;
+
+    }
+
+    setMetricsManager(metricsManager) {
+        this.metricsManager = metricsManager;
     }
 
     render(data) {
+        console.log("Début du rendu du graphe...");
+    
+        // Vérifier que les données sont valides
+        if (!data || !data.nodes || !data.links) {
+            console.error("Données invalides pour le rendu du graphe");
+            return;
+        }
+    
+        console.log("Données reçues :", data);
+        console.log("Nombre de nœuds :", data.nodes.length);
+        console.log("Nombre de liens :", data.links.length);
+    
         this.data = data;
+    
+        // Initialiser le SVG et le groupe principal
+        console.log("Initialisation du SVG...");
         const svg = this.initializeSVG();
         const g = svg.select("g");
     
-        // Calculer incomingLinksCount
+        // Calculer le nombre de liens entrants pour chaque nœud
+        console.log("Calcul des liens entrants...");
         const incomingLinksCount = this.calculateIncomingLinks(data.links);
     
-        // Initialiser nodeScale
+        // Initialiser l'échelle pour la taille des nœuds
+        console.log("Initialisation de l'échelle pour la taille des nœuds...");
         this.nodeScale = d3.scaleLinear()
             .domain([0, d3.max(Object.values(incomingLinksCount)) || 1])
             .range([CONFIG.nodeMinSize, CONFIG.nodeMaxSize]);
     
+        // Ajouter les marqueurs de flèche
+        console.log("Ajout des marqueurs de flèche...");
         this.addArrowMarkers(svg);
     
-        // Configuration de la simulation avant création des éléments
-        this.setupSimulation(data);
-    
-        // Création des éléments
+        // Créer les éléments du graphe (nœuds et liens)
+        console.log("Création des éléments du graphe...");
         const elements = this.createElements(g, data);
     
-        // Configuration des forces et démarrage
+        // Configurer la simulation
+        console.log("Configuration de la simulation...");
+        this.setupSimulation(data);
+    
+        // Configurer les forces de la simulation
+        console.log("Configuration des forces de la simulation...");
         this.setupSimulationForces(elements.node, elements.link);
     
-        // Forcer la simulation à démarrer
-        this.simulation.alphaTarget(0.3).restart(); // Relance la simulation avec une alphaTarget élevée
-        setTimeout(() => {
-            this.simulation.alphaTarget(0); // Réduit l'alphaTarget après un court délai
-        }, 1000); // Ajustez ce délai si nécessaire
+        // Démarrer la simulation
+        console.log("Démarrage de la simulation...");
+        this.simulation.alphaTarget(0.3).restart();
     
-        // Création de la légende
+        // Réduire l'alphaTarget après un court délai pour stabiliser la simulation
+        console.log("Réduction de l'alphaTarget après 1 seconde...");
+        setTimeout(() => {
+            this.simulation.alphaTarget(0);
+            console.log("Simulation stabilisée.");
+        }, 1000);
+    
+        // Créer la légende
+        console.log("Création de la légende...");
         this.createLegend(svg, data);
     
-        // Configuration des filtres
+        // Configurer les filtres
+        console.log("Configuration des filtres...");
         this.filterManager = new FilterManager(elements.node, elements.link, data);
     
-        // Mettre à jour la minimap après le rendu
-        if (this.minimapManager) {
-            this.minimapManager.createMinimap();
-        }
-
-        // Forcer la simulation à se stabiliser
-        this.simulation.alphaTarget(0.1).restart(); // Relance la simulation
-        setTimeout(() => {
-            this.simulation.alphaTarget(0); // Arrête la simulation après un court délai
-        }, 500); // Ajustez ce délai si nécessaire
-    
-        // Création de la légende
-        this.createLegend(svg, data);
-    
-        // Configuration des filtres
-        this.filterManager = new FilterManager(elements.node, elements.link, data);
-    
-        // Mettre à jour la minimap après le rendu
-        if (this.minimapManager) {
-            this.minimapManager.createMinimap();
-        }
-    }
-
-
-setupSimulation(data) {
-    if (this.simulation) {
-        this.simulation.stop();
-    }
-
-    const centerX = 0;
-    const centerY = 0;
-
-    // Calculer incomingLinksCount
-    const incomingLinksCount = this.calculateIncomingLinks(data.links);
-
-    this.simulation = d3.forceSimulation(data.nodes)
-        .force("link", d3.forceLink()
-            .id(d => d.id)
-            .links(data.links)
-            .distance(100))
-        .force("charge", d3.forceManyBody()
-            .strength(-800))
-        .force("center", d3.forceCenter(centerX, centerY))
-        .force("collide", d3.forceCollide().radius(d => this.nodeScale(incomingLinksCount[d.id] || 0) + 10)) // Ajustez le rayon de collision
-        .velocityDecay(0.6);
-
-    this.simulation.on("end", () => {
-        console.log("Simulation stabilisée");
-    });
-
-    return this.simulation;
-}
-
-
-    setupSimulationForces(node, link) {
-        if (!this.simulation) return;
-
-        this.simulation.on("tick", () => {
-            // Mise à jour des positions des liens
-            link
-                .attr("x1", d => d.source.x)
-                .attr("y1", d => d.source.y)
-                .attr("x2", d => d.target.x)
-                .attr("y2", d => d.target.y);
-
-            // Mise à jour des positions des nœuds
-            node.attr("transform", d => `translate(${d.x},${d.y})`);
+        // Forcer un rendu avec requestAnimationFrame
+        console.log("Forcer un rendu avec requestAnimationFrame...");
+        requestAnimationFrame(() => {
+            this.simulation.alphaTarget(0);
+            console.log("Rendu forcé terminé.");
         });
+    
+        console.log("Rendu du graphe terminé.");
     }
+
+
+    setupSimulation(data) {
+        if (this.simulation) {
+            this.simulation.stop();
+        }
+
+        const centerX = 0;
+        const centerY = 0;
+
+        // Calculer incomingLinksCount
+        const incomingLinksCount = this.calculateIncomingLinks(data.links);
+
+        this.simulation = d3.forceSimulation(data.nodes)
+            .force("link", d3.forceLink()
+                .id(d => d.id)
+                .links(data.links)
+                .distance(100))
+            .force("charge", d3.forceManyBody()
+                .strength(-800))
+            .force("center", d3.forceCenter(centerX, centerY))
+            .force("collide", d3.forceCollide().radius(d => this.nodeScale(incomingLinksCount[d.id] || 0) + 10)) // Ajustez le rayon de collision
+            .velocityDecay(0.6);
+
+        this.simulation.on("end", () => {
+            console.log("Simulation stabilisée");
+        });
+
+        return this.simulation;
+    }
+
 
 
     setupSimulationForces(node, link) {
         if (!this.simulation) return;
-    
+
         try {
             // Ajuster les forces pour utiliser tout l'espace disponible
             this.simulation
@@ -130,32 +136,39 @@ setupSimulation(data) {
                 // Retirer les forces de contrainte x et y
                 .force("x", null)
                 .force("y", null);
-    
+
             this.simulation.on("tick", () => {
+                // Mise à jour des positions des liens
                 link.each(function(d) {
                     const sourceRadius = d3.select(d.source.node).select('circle').attr('r');
                     const targetRadius = d3.select(d.target.node).select('circle').attr('r');
-    
+
                     const deltaX = d.target.x - d.source.x;
                     const deltaY = d.target.y - d.source.y;
                     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    
+
                     if (distance === 0) return;
-    
+
                     const sourceX = d.source.x + (deltaX * sourceRadius) / distance;
                     const sourceY = d.source.y + (deltaY * sourceRadius) / distance;
                     const targetX = d.target.x - (deltaX * targetRadius) / distance;
                     const targetY = d.target.y - (deltaY * targetRadius) / distance;
-    
+
                     d3.select(this)
                         .attr("x1", sourceX)
                         .attr("y1", sourceY)
                         .attr("x2", targetX)
                         .attr("y2", targetY);
                 });
-    
-                // Ne plus contraindre les nœuds aux limites
-                node.attr("transform", d => `translate(${d.x},${d.y})`);
+
+                // Mise à jour des positions des nœuds
+                node.attr("transform", d => {
+                    if (isNaN(d.x) || isNaN(d.y)) {
+                        console.error("Invalid node position:", d);
+                        return `translate(0, 0)`; // Valeur par défaut
+                    }
+                    return `translate(${d.x},${d.y})`;
+                });
             });
         } catch (error) {
             console.error("Error in setupSimulationForces:", error);
@@ -313,10 +326,6 @@ setupSimulation(data) {
         .scaleExtent([0.2, 4])
         .on("zoom", (event) => {
             g.attr("transform", event.transform);
-            // Mettre à jour la minimap lors du zoom
-            if (this.minimapManager) {
-                this.minimapManager.updateViewport();
-            }
         });
         
         svg.call(zoom);
@@ -662,56 +671,48 @@ setupSimulation(data) {
                         if (!this.data) return;
                     
                         try {
-                            // Mise à jour des données
+                            // Suppression du nœud et des liens associés
                             this.data.nodes = this.data.nodes.filter(n => n.id !== nodeToRemove.id);
                             this.data.links = this.data.links.filter(l => 
                                 l.source.id !== nodeToRemove.id && l.target.id !== nodeToRemove.id
                             );
                     
-                            // Mise à jour du DOM
-                            this.node = d3.select("#" + this.container.id)
-                                .selectAll(".nodes g")
-                                .data(this.data.nodes, d => d.id);
-                                
-                            this.node.exit().remove();
-                    
-                            this.link = d3.select("#" + this.container.id)
-                                .selectAll(".links line")
-                                .data(this.data.links, d => `${d.source.id}-${d.target.id}`);
-                                
-                            this.link.exit().remove();
-                    
                             // Mise à jour de la simulation
                             this.simulation.nodes(this.data.nodes);
                             this.simulation.force("link").links(this.data.links);
                             
-                            // Configuration de la simulation
+                            // Mise à jour du DOM
+                            const nodes = d3.select("#" + this.container.id)
+                                .selectAll(".nodes g")
+                                .data(this.data.nodes, d => d.id);
+                                
+                            nodes.exit().remove();
+                    
+                            const links = d3.select("#" + this.container.id)
+                                .selectAll(".links line")
+                                .data(this.data.links, d => `${d.source.id}-${d.target.id}`);
+                                
+                            links.exit().remove();
+                    
+                            // Mise à jour des métriques
+                            if (this.metricsManager) {
+                                this.metricsManager.updateMetricsDisplay();
+                                this.metricsManager.updateTopNodesTable();
+                            }
+                    
+                            // Redémarrage plus progressif de la simulation
                             this.simulation
                                 .alpha(0.5)
                                 .alphaTarget(0)
                                 .alphaDecay(0.02)
-                                .on("tick", () => {
-                                    // Mise à jour des positions
-                                    this.node.attr("transform", d => `translate(${d.x},${d.y})`);
-                                    this.link
-                                        .attr("x1", d => d.source.x)
-                                        .attr("y1", d => d.source.y)
-                                        .attr("x2", d => d.target.x)
-                                        .attr("y2", d => d.target.y);
-                    
-                                    // Mise à jour de la minimap si la simulation est stable
-                                    if (this.simulation.alpha() < 0.05) {
-                                        if (this.minimapManager) {
-                                            this.minimapManager.createMinimap();
-                                        }
-                                    }
-                                })
                                 .restart();
                     
                         } catch (error) {
                             console.error("Error removing node:", error);
                         }
                     }
+
+
 
         addArrowMarkers(svg) {
             // Ajouter un filtre pour l'effet de lueur

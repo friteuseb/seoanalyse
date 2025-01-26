@@ -201,4 +201,104 @@ class MetricsManager {
     }
 
 
+
+    updateTopNodesTable() {
+        // Supprimer la table existante si elle existe
+        d3.select("#topNodesTable").remove();
+
+        // Calculer les liens entrants et sortants pour chaque nœud
+        const nodeStats = this.calculateNodeStats();
+        
+        // Créer la table
+        const table = d3.select("#controls")
+            .append("table")
+            .attr("id", "topNodesTable")
+            .style("width", "100%")
+            .style("margin-top", "20px");
+
+        // En-tête
+        table.append("thead")
+            .append("tr")
+            .selectAll("th")
+            .data(["Top liens entrants", "Count", "Top liens sortants", "Count"])
+            .enter()
+            .append("th")
+            .text(d => d);
+
+        // Corps du tableau
+        const tbody = table.append("tbody");
+        const rows = tbody.selectAll("tr")
+            .data(d3.range(5))
+            .enter()
+            .append("tr");
+
+        // Données des liens entrants
+        rows.append("td")
+            .text(i => nodeStats.topIncoming[i] ? nodeStats.topIncoming[i].label : "-")
+            .style("cursor", "pointer")
+            .on("contextmenu", (event, i) => {
+                event.preventDefault();
+                if (nodeStats.topIncoming[i]) {
+                    if (confirm(`Supprimer le nœud "${nodeStats.topIncoming[i].label}" ?`)) {
+                        this.graphRenderer.removeNode(nodeStats.topIncoming[i]);
+                    }
+                }
+            });
+
+        rows.append("td")
+            .text(i => nodeStats.topIncoming[i] ? nodeStats.topIncoming[i].count : "-");
+
+        // Données des liens sortants
+        rows.append("td")
+            .text(i => nodeStats.topOutgoing[i] ? nodeStats.topOutgoing[i].label : "-")
+            .style("cursor", "pointer")
+            .on("contextmenu", (event, i) => {
+                event.preventDefault();
+                if (nodeStats.topOutgoing[i]) {
+                    if (confirm(`Supprimer le nœud "${nodeStats.topOutgoing[i].label}" ?`)) {
+                        this.graphRenderer.removeNode(nodeStats.topOutgoing[i]);
+                    }
+                }
+            });
+
+        rows.append("td")
+            .text(i => nodeStats.topOutgoing[i] ? nodeStats.topOutgoing[i].count : "-");
+    }
+
+    calculateNodeStats() {
+        const incomingLinks = new Map();
+        const outgoingLinks = new Map();
+        
+        // Compter les liens entrants et sortants
+        this.graphRenderer.data.links.forEach(link => {
+            const sourceId = link.source.id;
+            const targetId = link.target.id;
+            
+            outgoingLinks.set(sourceId, (outgoingLinks.get(sourceId) || 0) + 1);
+            incomingLinks.set(targetId, (incomingLinks.get(targetId) || 0) + 1);
+        });
+
+        // Convertir en tableaux et trier
+        const topIncoming = Array.from(incomingLinks.entries())
+            .map(([id, count]) => ({
+                id,
+                label: this.graphRenderer.data.nodes.find(n => n.id === id)?.label || id,
+                count
+            }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+        const topOutgoing = Array.from(outgoingLinks.entries())
+            .map(([id, count]) => ({
+                id,
+                label: this.graphRenderer.data.nodes.find(n => n.id === id)?.label || id,
+                count
+            }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+        return { topIncoming, topOutgoing };
+    }
+
+
 }

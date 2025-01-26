@@ -273,21 +273,6 @@
     color: white;
 }
 
-.minimap-container {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 200px;
-    height: 200px;
-    background: rgba(0, 0, 0, 0.8);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    overflow: hidden;
-}
-
-.minimap-viewport {
-    pointer-events: none;
-}
 .context-menu-item {
     transition: background-color 0.2s;
 }
@@ -457,6 +442,32 @@
    flex-wrap: wrap;
 }
 
+
+#topNodesTable {
+    border-collapse: collapse;
+    margin-top: 20px;
+    width: 100%;
+    color: white;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+#topNodesTable th,
+#topNodesTable td {
+    padding: 8px;
+    text-align: left;
+    border: 1px solid #444;
+}
+
+#topNodesTable th {
+    background-color: #333;
+}
+
+#topNodesTable td:hover {
+    background-color: #444;
+}
+
+
+
    </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -538,9 +549,6 @@
         </div>
     </div>
     
-    <div id="minimap" class="minimap-container">
-        <!-- La mini-map sera générée en JS -->
-    </div>
 
     <!-- 1. Librairies et configurations de base -->
     <script src="js/config.js"></script>
@@ -556,8 +564,7 @@
     <script src="js/search.js"></script>
     <script src="js/filters.js"></script>
     <script src="js/export.js"></script>
-    <script src="js/minimap.js"></script>
-    <script src="js/draggablePanels.js"></script>
+       <script src="js/draggablePanels.js"></script>
 
     <!-- 4. Script principal -->
     <script src="js/main.js"></script>

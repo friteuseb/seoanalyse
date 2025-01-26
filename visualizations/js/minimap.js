@@ -36,92 +36,98 @@ class MinimapManager {
     }
 
     createMinimap() {
-        if (!this.graphRenderer.data || !this.minimapContainer) return;
-        
+        if (!this.graphRenderer || !this.graphRenderer.data || !this.minimapContainer) return;
+    
+        // Nettoyer la minimap existante
         this.clearMinimap();
-
-        if (!this.graphRenderer.data.nodes.some(node => isNaN(node.x) || isNaN(node.y))) {
-            const minimapSvg = d3.select(this.minimapContainer)
-                .append('svg')
-                .attr('width', '100%')
-                .attr('height', '100%');
-
-            // Calcul des limites du graphe
-            const xExtent = d3.extent(this.graphRenderer.data.nodes, d => d.x);
-            const yExtent = d3.extent(this.graphRenderer.data.nodes, d => d.y);
-            
-            // Calcul des échelles
-            const xScale = d3.scaleLinear()
-                .domain([xExtent[0], xExtent[1]])
-                .range([10, this.minimapSize - 10]);
-
-            const yScale = d3.scaleLinear()
-                .domain([yExtent[0], yExtent[1]])
-                .range([10, this.minimapSize - 10]);
-
-            // Création d'un groupe pour le contenu
-            const minimapG = minimapSvg.append('g');
-
-            // Dessiner les liens
-            minimapG.selectAll('line')
-                .data(this.graphRenderer.data.links)
-                .join('line')
-                .attr('stroke', '#666')
-                .attr('stroke-width', 0.5)
-                .attr('x1', d => xScale(d.source.x))
-                .attr('y1', d => yScale(d.source.y))
-                .attr('x2', d => xScale(d.target.x))
-                .attr('y2', d => yScale(d.target.y));
-
-            // Dessiner les nœuds
-            minimapG.selectAll('circle')
-                .data(this.graphRenderer.data.nodes)
-                .join('circle')
-                .attr('r', 2)
-                .attr('fill', d => getColor(d.group))
-                .attr('cx', d => xScale(d.x))
-                .attr('cy', d => yScale(d.y));
-
-            // Viewport
-            const viewport = minimapSvg.append('rect')
-                .attr('class', 'minimap-viewport')
-                .attr('stroke', '#fff')
-                .attr('stroke-width', 1)
-                .attr('fill', 'none')
-                .attr('pointer-events', 'none');
-
+    
+        // Calculer les limites du graphe
+        const xExtent = d3.extent(this.graphRenderer.data.nodes, d => d.x);
+        const yExtent = d3.extent(this.graphRenderer.data.nodes, d => d.y);
+    
+        // Définir les échelles
+        const xScale = d3.scaleLinear()
+            .domain([xExtent[0], xExtent[1]])
+            .range([10, this.minimapSize - 10]);
+    
+        const yScale = d3.scaleLinear()
+            .domain([yExtent[0], yExtent[1]])
+            .range([10, this.minimapSize - 10]);
+    
+        // Créer le SVG de la minimap
+        const minimapSvg = d3.select(this.minimapContainer)
+            .append('svg')
+            .attr('width', '100%')
+            .attr('height', '100%');
+    
+        // Dessiner les liens
+        minimapSvg.selectAll('line')
+            .data(this.graphRenderer.data.links)
+            .join('line')
+            .attr('stroke', '#666')
+            .attr('stroke-width', 0.5)
+            .attr('x1', d => xScale(d.source.x))
+            .attr('y1', d => yScale(d.source.y))
+            .attr('x2', d => xScale(d.target.x))
+            .attr('y2', d => yScale(d.target.y));
+    
+        // Dessiner les nœuds
+        minimapSvg.selectAll('circle')
+            .data(this.graphRenderer.data.nodes)
+            .join('circle')
+            .attr('r', 2)
+            .attr('fill', d => getColor(d.group))
+            .attr('cx', d => xScale(d.x))
+            .attr('cy', d => yScale(d.y));
+    
+        // Ajouter le viewport
+        minimapSvg.append('rect')
+            .attr('class', 'minimap-viewport')
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 1)
+            .attr('fill', 'none')
+            .attr('pointer-events', 'none');
+    
+        // Mettre à jour le viewport après un court délai
+        setTimeout(() => {
             this.updateViewport();
-        }
+        }, 10000); // Délai de 100 ms
     }
 
     updateViewport() {
-        if (!this.minimapContainer) return;
-
+        if (!this.minimapContainer || !this.graphRenderer || !this.graphRenderer.data) {
+            console.error("Données ou conteneur manquants pour la mise à jour du viewport");
+            return;
+        }
+    
         const transform = d3.zoomTransform(this.graphRenderer.container.querySelector('svg'));
         const viewport = d3.select(this.minimapContainer).select('.minimap-viewport');
-        
+    
+        if (viewport.empty()) {
+            console.error("Viewport non trouvé dans la minimap");
+            return;
+        }
+    
         // Calcul des limites du graphe
         const xExtent = d3.extent(this.graphRenderer.data.nodes, d => d.x);
         const yExtent = d3.extent(this.graphRenderer.data.nodes, d => d.y);
-        
+    
         // Échelles pour la transformation
         const xScale = d3.scaleLinear()
             .domain([xExtent[0], xExtent[1]])
             .range([10, this.minimapSize - 10]);
-
+    
         const yScale = d3.scaleLinear()
             .domain([yExtent[0], yExtent[1]])
             .range([10, this.minimapSize - 10]);
-        
-        if (!viewport.empty()) {
-            const width = Math.abs(xScale(this.graphRenderer.width / transform.k) - xScale(0));
-            const height = Math.abs(yScale(this.graphRenderer.height / transform.k) - yScale(0));
-            
-            viewport
-                .attr('x', xScale(-transform.x / transform.k))
-                .attr('y', yScale(-transform.y / transform.k))
-                .attr('width', width)
-                .attr('height', height);
-        }
+    
+        const width = Math.abs(xScale(this.graphRenderer.width / transform.k) - xScale(0));
+        const height = Math.abs(yScale(this.graphRenderer.height / transform.k) - yScale(0));
+    
+        viewport
+            .attr('x', xScale(-transform.x / transform.k))
+            .attr('y', yScale(-transform.y / transform.k))
+            .attr('width', width)
+            .attr('height', height);
     }
 }

@@ -118,5 +118,7 @@ class AppManager {
 
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOMContentLoaded: Initialisation de l'application");
     window.app = new AppManager();
+    console.log("Application initialisée:", window.app);
 });

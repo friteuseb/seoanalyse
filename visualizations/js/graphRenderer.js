@@ -16,6 +16,7 @@ class GraphRenderer {
         this.metricsManager = metricsManager;
     }
 
+
     render(data) {
         console.log("Début du rendu du graphe...");
     
@@ -71,6 +72,13 @@ class GraphRenderer {
         setTimeout(() => {
             this.simulation.alphaTarget(0);
             console.log("Simulation stabilisée.");
+            
+            // Mettre à jour les métriques et le tableau après la stabilisation
+            if (this.metricsManager) {
+                console.log("Mise à jour des métriques et du tableau...");
+                this.metricsManager.updateMetricsDisplay();
+                this.metricsManager.updateTopNodesTable();
+            }
         }, 1000);
     
         // Créer la légende
@@ -355,15 +363,15 @@ class GraphRenderer {
             .range([CONFIG.nodeMinSize, CONFIG.nodeMaxSize]);
 
         // Création des liens
-        const link = this.createLinks(g, data.links);  
+        this.link = this.createLinks(g, data.links);  
 
         // Création des nœuds
-        const node = this.createNodes(g, data.nodes, nodeScale, incomingLinksCount);
+        this.node = this.createNodes(g, data.nodes, nodeScale, incomingLinksCount);
 
         // Configuration de la simulation
-        this.setupSimulationForces(node, link);
+        this.setupSimulationForces(this.node, this.link);
 
-        return { node, link };
+        return { node: this.node, link: this.link };
     }
 
     calculateIncomingLinks(links) {
@@ -422,13 +430,15 @@ class GraphRenderer {
             node.append("circle")
                 .attr("r", d => {
                     const count = incomingLinksCount[d.id] || 0;
-                    console.log(`Node ${d.id} has ${count} incoming links`); // Debug
+                    console.log(`Node ${d.id} has ${count} incoming links`);
                     return nodeScale(count);
                 })
-                .attr("fill", "#1E90FF") // Bleu électrique
-                .attr("stroke", "#104E8B") // Contour plus foncé
-                .attr("stroke-width", 2) // Épaisseur du contour
-                .style("filter", "url(#glow)"); // Effet de lueur
+                .attr("fill", "#1E90FF")        // Couleur initiale en bleu électrique
+                .attr("stroke", "#104E8B")      // Contour initial en bleu foncé
+                .attr("stroke-width", "2")
+                .attr("data-original-fill", "#1E90FF")    // Stocker la couleur originale
+                .attr("data-original-stroke", "#104E8B")  // Stocker le contour original
+                .style("filter", "url(#glow)");
         
             // Ajout des labels
             node.append("text")
@@ -440,10 +450,7 @@ class GraphRenderer {
                 .style("fill", "#fff");
         
             return node;
-
-            
         }
-
 
 
         showContextMenu(event, node) {

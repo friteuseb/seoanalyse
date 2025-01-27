@@ -98,6 +98,37 @@ Pour lancer l'application principale qui inclut toutes les étapes ci-dessus :
 python3 main.py <URL> <CSS Selector>
 ```
 
+
+## Exclure des classes ou IDs lors du lancement du script :
+
+1. **Avec le sélecteur CSS en utilisant :not()** :
+```bash
+python3 main.py https://example.com "#content:not(.menu):not(.footer)"
+```
+Ou
+```bash
+python3 main.py https://example.com ".content:not(#menu):not(.sidebar)"
+```
+
+2. **Avec l'option -e (ou --exclude-patterns)** pour exclure des patterns spécifiques d'URLs :
+```bash
+python3 main.py https://example.com ".content" -e cart checkout login
+```
+
+L'utilisation de `:not()` dans le sélecteur CSS est la méthode recommandée pour exclure des éléments spécifiques du DOM, tandis que l'option `-e` est plus adaptée pour exclure des pages entières basées sur des patterns d'URL.
+
+Quelques exemples concrets :
+- Pour analyser le contenu principal en excluant le menu et la sidebar :
+```bash
+python3 main.py https://example.com "#main-content:not(.navigation):not(.sidebar)"
+```
+
+- Pour analyser tous les articles en excluant les zones de commentaires :
+```bash
+python3 main.py https://example.com ".article:not(.comments)"
+```
+
+
 ### Visualisation des résultats
 
 Les résultats sont sauvegardés dans Redis et peuvent être visualisés via des graphiques interactifs générés par D3.js et HTML.

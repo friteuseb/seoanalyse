@@ -24,19 +24,22 @@ class MetricsManager {
                 `${metrics.bidirectionalCount || 0} (${metrics.bidirectionalPercentage?.toFixed(1)}%)`);
             this.updateMetricValue('.clustering', 
                 metrics.clustering ? metrics.clustering.toFixed(3) : '-');
+                
+            // Mise à jour du tableau des nœuds les plus connectés
+            this.updateTopNodesTable();
+            
         } catch (error) {
             console.error('Erreur lors de la mise à jour des métriques:', error);
         }
     }
-
-    // Méthode utilitaire pour mettre à jour une métrique de manière sécurisée
+    
+    // Ajoutez cette méthode auxiliaire si elle n'existe pas déjà
     updateMetricValue(selector, value) {
         const element = this.metricsPanel.querySelector(selector);
         if (element) {
             element.textContent = value;
         }
     }
-
 
     calculateMetrics() {
         const data = this.graphRenderer.data;

@@ -129,6 +129,36 @@ python3 main.py https://example.com ".article:not(.comments)"
 ```
 
 
+## Vous pouvez utiliser l'attribut `role` dans vos sélecteurs CSS de différentes manières :
+
+1. En utilisant la syntaxe d'attribut :
+```bash
+python3 main.py http://0.0.0.0:8000 "[role='main']"
+```
+
+2. En ciblant des éléments HTML sémantiques directement :
+```bash
+python3 main.py http://0.0.0.0:8000 "main"
+python3 main.py http://0.0.0.0:8000 "article"
+python3 main.py http://0.0.0.0:8000 "nav"
+python3 main.py http://0.0.0.0:8000 "footer"
+```
+
+3. En combinant plusieurs éléments :
+```bash
+python3 main.py http://0.0.0.0:8000 "main, article"
+```
+
+4. En excluant certaines zones :
+```bash
+python3 main.py http://0.0.0.0:8000 "body:not(footer):not(nav)"
+```
+
+Cette fonctionnalité est particulièrement utile pour :
+- Analyser uniquement le contenu principal en excluant la navigation
+- Se concentrer sur les zones éditoriales
+- Exclure les zones de menu ou de pied de page qui contiennent souvent des liens de navigation non pertinents pour l'analyse sémantique
+
 ### Visualisation des résultats
 
 Les résultats sont sauvegardés dans Redis et peuvent être visualisés via des graphiques interactifs générés par D3.js et HTML.

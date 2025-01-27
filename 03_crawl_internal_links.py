@@ -130,8 +130,8 @@ def extract_internal_links(base_url, content, selector=None, exclude_patterns=No
 
     return list(links)
 
-
-def crawl_with_retry(url, exclude_patterns=None, max_retries=3, delay=1):
+# Délais d'analyse de liens passé à 0 pour l'analyse locale. Passer à 1sec pour le "politeness delay"
+def crawl_with_retry(url, exclude_patterns=None, max_retries=3, delay=0):
     """
     Télécharge une page avec gestion des redirections et patterns d'exclusion
     """

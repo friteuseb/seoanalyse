@@ -152,6 +152,8 @@ python3 main.py http://0.0.0.0:8000 "main, article"
 4. En excluant certaines zones :
 ```bash
 python3 main.py http://0.0.0.0:8000 "body:not(footer):not(nav)"
+python3 main.py https://www.cnrs.fr ".main-column" -e en person personne --no-cluster
+
 ```
 
 Cette fonctionnalité est particulièrement utile pour :

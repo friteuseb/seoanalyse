@@ -170,47 +170,48 @@ def get_urls_from_sitemap(base_url, exclude_patterns=None):
     
     return sitemap_urls
 
+def should_exclude_url(url, patterns):
+    """Vérifie si l'URL contient un des patterns à exclure"""
+    if not patterns:
+        return False
+    url_lower = url.lower()
+    return any(pattern.lower() in url_lower for pattern in patterns)
 
 
-def crawl_web(url, exclude_patterns=None):
+def crawl_web(url, exclude_patterns=None, sitemap_url=None):
     """Fonction principale pour le crawl web"""
     cleaned_url = url.split('//')[1].replace(':', '_').replace('.', '_').replace('/', '_')
     crawl_id = f"{cleaned_url}__{str(uuid.uuid4())}"
-
-    # Initialiser le SitemapHandler
-    sitemap_handler = SitemapHandler(base_url=url)
+    
+    # Récupérer et filtrer les URLs du sitemap
+    urls = get_urls_from_sitemap(url, sitemap_url)
     if exclude_patterns:
-        sitemap_handler.add_exclude_patterns(exclude_patterns)
-
-    # Découvrir les URLs
-    urls = sitemap_handler.discover_urls()
-    if not urls:
-        logging.error(f"❌ Aucun sitemap trouvé pour {url}. Fin du processus.")
-        return None
-
+        urls = filter_sitemap_urls(urls, exclude_patterns)
+    
     stored_pages = 0
     total_urls = len(urls)
-
+    
     logging.info(f"""
     🌐 Démarrage du crawl web:
     • URL de base: {url}
     • URLs à traiter: {total_urls}
+    • Patterns exclus: {exclude_patterns if exclude_patterns else 'Aucun'}
+    • Sitemap: {sitemap_url if sitemap_url else 'Auto-détection'}
     """)
-
+    
     for current_url in urls:
         content = crawl_url(current_url)
-        if content:
-            save_to_redis(current_url, content, crawl_id)
-            stored_pages += 1
-
-        # Afficher la progression
+        if content and not should_exclude_url(current_url, exclude_patterns):
+            if save_to_redis(current_url, content, crawl_id):
+                stored_pages += 1
+        
         if stored_pages % 10 == 0 or stored_pages == total_urls:
-            progress = (stored_pages / total_urls) * 100
+            progress = (stored_pages/total_urls) * 100
             logging.info(f"""
             📊 Progression: {stored_pages}/{total_urls} ({progress:.1f}%)
             ✅ Pages stockées: {stored_pages}
             """)
-
+    
     return crawl_id
 
 

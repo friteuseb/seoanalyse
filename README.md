@@ -9,7 +9,7 @@ Ce projet est une application d'analyse sémantique et de visualisation de liens
 3. **Visualisation des liens internes** : Affichage des liens internes sous forme de graphes interactifs.
 4. **Clusterisation** : Regroupement des pages en clusters basés sur le contenu sémantique.
 5. **Assignation de couleurs de cluster** : Harmonisation des couleurs pour une meilleure visualisation.
-
+6. **Filtrage des pages** : Exclusion de pages spécifiques basée sur des patterns d'URLs.
 
 ## Fonctionnement de l'application
 
@@ -28,7 +28,6 @@ Ce schéma montre le flux de travail de l'application :
 
 Redis joue un rôle central dans ce processus, servant de stockage intermédiaire pour les données à chaque étape. Cette architecture permet une analyse efficace et une visualisation dynamique des résultats.
 
-
 ## Prérequis
 
 - Python 3.7 ou supérieur
@@ -45,11 +44,12 @@ Redis joue un rôle central dans ce processus, servant de stockage intermédiair
 
 ## Installation
 
-Créeez un environnement virtuel : 
+Créez un environnement virtuel : 
    ```sh
    python3 -m venv venv
    source venv/bin/activate
    ```
+
 1. Clonez le dépôt GitHub :
    ```sh
    git clone https://github.com/friteuseb/seoanalyse.git
@@ -70,96 +70,52 @@ Créeez un environnement virtuel :
 
 ## Utilisation
 
-### Crawling d'un site web
+### Options de lancement
 
-Pour lancer un crawl d'un site web et extraire le contenu des pages :
+Il existe plusieurs façons d'utiliser l'application en fonction de vos besoins :
+
+1. **Analyse basique** :
 ```sh
-python3 01_crawl.py <URL>
+python3 main.py https://example.com ".content"
 ```
 
-### Analyse des liens internes
-
-Pour analyser les liens internes d'un crawl spécifique :
+2. **Exclusion de pages par pattern d'URL** :
 ```sh
-python3 03_crawl_internal_links.py <crawl_id> <CSS Selector>
+python3 main.py https://example.com ".content" -e pattern1 pattern2 pattern3
+```
+Par exemple, pour exclure les pages en anglais et les profils :
+```sh
+python3 main.py https://www.cnrs.fr ".main-column" -e en person personne
 ```
 
-### Analyse sémantique
-
-Pour réaliser une analyse sémantique et déterminer les clusters :
+3. **Désactivation de la clusterisation** :
 ```sh
-python3 02_analyse.py <crawl_id>
+python3 main.py https://example.com ".content" --no-cluster
 ```
 
-### Lancement de l'application principale
-
-Pour lancer l'application principale qui inclut toutes les étapes ci-dessus :
+4. **Combinaison des options** :
 ```sh
-python3 main.py <URL> <CSS Selector>
+python3 main.py https://example.com ".content" -e pattern1 pattern2 --no-cluster
 ```
 
+### Exclusion de zones dans le DOM
 
-## Exclure des classes ou IDs lors du lancement du script :
+Vous pouvez utiliser les sélecteurs CSS pour exclure des zones spécifiques :
 
-1. **Avec le sélecteur CSS en utilisant :not()** :
-```bash
+1. **Exclusion de classes ou IDs** :
+```sh
 python3 main.py https://example.com "#content:not(.menu):not(.footer)"
 ```
-Ou
-```bash
+ou
+```sh
 python3 main.py https://example.com ".content:not(#menu):not(.sidebar)"
 ```
 
-2. **Avec l'option -e (ou --exclude-patterns)** pour exclure des patterns spécifiques d'URLs :
-```bash
-python3 main.py https://example.com ".content" -e cart checkout login
+2. **Utilisation des attributs role** :
+```sh
+python3 main.py https://example.com "[role='main']"
+python3 main.py https://example.com "main:not(nav):not(footer)"
 ```
-
-L'utilisation de `:not()` dans le sélecteur CSS est la méthode recommandée pour exclure des éléments spécifiques du DOM, tandis que l'option `-e` est plus adaptée pour exclure des pages entières basées sur des patterns d'URL.
-
-Quelques exemples concrets :
-- Pour analyser le contenu principal en excluant le menu et la sidebar :
-```bash
-python3 main.py https://example.com "#main-content:not(.navigation):not(.sidebar)"
-```
-
-- Pour analyser tous les articles en excluant les zones de commentaires :
-```bash
-python3 main.py https://example.com ".article:not(.comments)"
-```
-
-
-## Vous pouvez utiliser l'attribut `role` dans vos sélecteurs CSS de différentes manières :
-
-1. En utilisant la syntaxe d'attribut :
-```bash
-python3 main.py http://0.0.0.0:8000 "[role='main']"
-```
-
-2. En ciblant des éléments HTML sémantiques directement :
-```bash
-python3 main.py http://0.0.0.0:8000 "main"
-python3 main.py http://0.0.0.0:8000 "article"
-python3 main.py http://0.0.0.0:8000 "nav"
-python3 main.py http://0.0.0.0:8000 "footer"
-```
-
-3. En combinant plusieurs éléments :
-```bash
-python3 main.py http://0.0.0.0:8000 "main, article"
-```
-
-4. En excluant certaines zones :
-```bash
-python3 main.py http://0.0.0.0:8000 "body:not(footer):not(nav)"
-python3 main.py https://www.cnrs.fr ".main-column" -e en person personne --no-cluster
-
-```
-
-Cette fonctionnalité est particulièrement utile pour :
-- Analyser uniquement le contenu principal en excluant la navigation
-- Se concentrer sur les zones éditoriales
-- Exclure les zones de menu ou de pied de page qui contiennent souvent des liens de navigation non pertinents pour l'analyse sémantique
 
 ### Visualisation des résultats
 

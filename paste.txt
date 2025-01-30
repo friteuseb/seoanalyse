@@ -1,0 +1,109 @@
+<ul class="list"><li class="item first  " id="listItem1344"><a href="/informations-sur-l-or/faq/doit-on-integrer-le-vente-de-son-or-a-sa-declaration-sur-le-revenu-ir">
+                                    Doit on intégrer la vente de son Or à sa déclaration sur le revenu (IR) ?
+                                </a></li><li class="item   " id="listItem1293"><a href="/informations-sur-l-or/faq/5-raisons-intemporelles-dacheter-de-lor">
+                                    5 raisons (intemporelles) d'acheter de l'or
+                                </a></li><li class="item   " id="listItem1281"><a href="/informations-sur-l-or/faq/qui-detient-de-lor">
+                                    Qui détient de l'or ?
+                                </a></li><li class="item   current" id="listItem1280"><a href="/informations-sur-l-or/faq/pourquoi-votre-banque-ne-vend-elle-pas-dor">
+                                    Pourquoi votre banque ne vend-elle pas d’or ?
+                                </a></li><li class="item   " id="listItem1279"><a href="/informations-sur-l-or/faq/ce-quil-faut-savoir-sur-largent">
+                                    Ce qu’il faut savoir sur l’argent : Cours de l'argent et prix de l'argent
+                                </a></li><li class="item   " id="listItem1274"><a href="/informations-sur-l-or/faq/comment-investir-dans-lor">
+                                    Comment investir dans l'or
+                                </a></li><li class="item   " id="listItem1270"><a href="/informations-sur-l-or/faq/l-or-et-le-livret-a">
+                                    L'Or et le Livret A
+                                </a></li><li class="item   " id="listItem219"><a href="/informations-sur-l-or/faq/combien-dor-a-ete-extrait-au-total-dans-le-monde">
+                                    Combien d'Or a été extrait au total dans le monde ?
+                                </a></li><li class="item   " id="listItem1237"><a href="/informations-sur-l-or/faq/telecharger_livres_blancs_comptoir_national_de_lor">
+                                    Exclusivité : Tous nos livres blancs Comptoir National de l’Or en téléchargement
+                                </a></li><li class="item   " id="listItem218"><a href="/informations-sur-l-or/faq/y-a-til-une-saisonnalite-de-lor">
+                                    Y a t'il une saisonnalité de l'Or
+                                </a></li><li class="item   " id="listItem79"><a href="/informations-sur-l-or/faq/fiscalite-sur-lor">
+                                    La fiscalité de l'or
+                                </a></li><li class="item   " id="listItem157"><a href="/informations-sur-l-or/faq/tarifs-vente-or">
+                                    Tarifs Vente Or
+                                </a></li><li class="item   " id="listItem513"><a href="/informations-sur-l-or/faq/assurer-son-or">
+                                    Faut-il assurer son Or et à quel prix ?
+                                </a></li><li class="item   " id="listItem502"><a href="/informations-sur-l-or/faq/banque-ou-agence-ou-revendre-son-or">
+                                    Banque ou Agence: où revendre son Or ? Quel prix pour mon rachat Or ?
+                                </a></li><li class="item   " id="listItem495"><a href="/informations-sur-l-or/faq/tout-ce-quil-faut-savoir-sur-les-pieces-dor">
+                                    Tout ce qu'il faut savoir sur les Pièces d'Or
+                                </a></li><li class="item   " id="listItem472"><a href="/informations-sur-l-or/faq/or-utilisations-et-alliages">
+                                    Or: Utilisations et alliages
+                                </a></li><li class="item   " id="listItem1272"><a href="/informations-sur-l-or/faq/pourquoi-dit-on-que-lor-est-une-valeur-refuge">
+                                    Pourquoi dit-on que l'or est une valeur refuge ?
+                                </a></li><li class="item   " id="listItem1271"><a href="/informations-sur-l-or/faq/le-palladium-plus-cher-que-lor">
+                                    Le prix du palladium plus cher que le prix de l'or et le prix de l'argent
+                                </a></li><li class="item   " id="listItem1269"><a href="/informations-sur-l-or/faq/peut-on-donner-son-or">
+                                    Peut-on donner son or ?
+                                </a></li><li class="item   " id="listItem1268"><a href="/informations-sur-l-or/faq/transmettre-son-or-tout-ce-qu-il-faut-savoir">
+                                    Transmettre son or : tout ce qu'il faut savoir
+                                </a></li><li class="item   " id="listItem1267"><a href="/informations-sur-l-or/faq/quelle-est-la-fiscalite-de-l-or">
+                                    Quelle est la fiscalité de l'or ?
+                                </a></li><li class="item   " id="listItem468"><a href="/informations-sur-l-or/faq/lor-poids-et-mesures">
+                                    L'or : poids et mesures
+                                </a></li><li class="item   " id="listItem153"><a href="/informations-sur-l-or/faq/qui-travaille-au-comptoir-national-de-lor">
+                                    Qui travaille au Comptoir National de l’Or ?
+                                </a></li><li class="item   " id="listItem464"><a href="/informations-sur-l-or/faq/or-la-classification">
+                                    Or papier et Or physique
+                                </a></li><li class="item   " id="listItem152"><a href="/informations-sur-l-or/faq/5-bonnes-raisons-de-faire-confiance-a-goldfr">
+                                    5 bonnes raisons de faire confiance à Gold.fr
+                                </a></li><li class="item   " id="listItem147"><a href="/informations-sur-l-or/faq/existe-t-il-un-taxe-sur-la-vente-dor">
+                                    Existe-t-il une taxe sur la vente d’Or ?
+                                </a></li><li class="item   " id="listItem453"><a href="/informations-sur-l-or/faq/comment-est-fixe-le-cours-de-lor">
+                                    Comment est fixé le cours de l'Or et le prix de l'or ?
+                                </a></li><li class="item   " id="listItem450"><a href="/informations-sur-l-or/faq/imposition-des-donations-de-pieces-dor">
+                                    Imposition des donations de Pièces d’Or
+                                </a></li><li class="item   " id="listItem146"><a href="/informations-sur-l-or/faq/existe-til-une-taxe-sur-lachat-dor">
+                                    Existe t'il une taxe sur l'achat d'Or ?
+                                </a></li><li class="item   " id="listItem145"><a href="/informations-sur-l-or/faq/tout-ce-que-vous-pouvez-vendre">
+                                    Tout ce que vous pouvez vendre Rachat Or et Argent
+                                </a></li><li class="item   " id="listItem386"><a href="/informations-sur-l-or/faq/comment-garantir-la-prime-sur-vos-pieces-dor">
+                                    Comment garantir la prime sur vos pièces d'or ?
+                                </a></li><li class="item   " id="listItem7"><a href="/informations-sur-l-or/faq/tarifs-achats-or">
+                                    Tarifs Achats Or
+                                </a></li><li class="item   " id="listItem312"><a href="/informations-sur-l-or/faq/reserves-dor-des-banques-centrales">
+                                    Réserves d’or des banques centrales
+                                </a></li><li class="item   " id="listItem123"><a href="/informations-sur-l-or/faq/quel-est-le-lien-entre-le-comptoir-national-de-lor-et-goldfr">
+                                    Quel est le lien entre le Comptoir National de l’Or et Gold.Fr ?
+                                </a></li><li class="item   " id="listItem297"><a href="/informations-sur-l-or/faq/quels-sont-les-couleurs-de-lor">
+                                    Quels sont les couleurs de l’or ?
+                                </a></li><li class="item   " id="listItem120"><a href="/informations-sur-l-or/faq/peut-on-vendre-lor-a-letranger">
+                                    Peut-on vendre l’Or à l’étranger ?
+                                </a></li><li class="item   " id="listItem119"><a href="/informations-sur-l-or/faq/rachete-ton-les-pierres-precieuses-ou-les-mecanismes-de-montres">
+                                    Rachète t’on les pierres précieuses ou les mécanismes de montres ?
+                                </a></li><li class="item   " id="listItem143"><a href="/informations-sur-l-or/faq/fiscalite-sur-lachat-dor">
+                                    Investir dans l'Or et la TVA
+                                </a></li><li class="item   " id="listItem118"><a href="/informations-sur-l-or/faq/le-comptoir-national-de-lor-rachete-til-dautres-metaux-que-lor">
+                                    Le Comptoir National de l’Or rachète t’il d’autres métaux que l’Or?
+                                </a></li><li class="item   " id="listItem352"><a href="/informations-sur-l-or/faq/la-prime-sur-les-pieces-dor">
+                                    Prime sur les pièces d'or
+                                </a></li><li class="item   " id="listItem117"><a href="/informations-sur-l-or/faq/comment-evaluer-mon-or">
+                                    Comment évaluer le prix de mon or ?
+                                </a></li><li class="item   " id="listItem141"><a href="/informations-sur-l-or/faq/les-droits-de-donation-sur-lor">
+                                    Les droits de donation sur l’Or
+                                </a></li><li class="item   " id="listItem116"><a href="/informations-sur-l-or/faq/liste-des-objets-en-or-que-lon-peut-vendre">
+                                    Liste des objets en Or que l’on peut vendre ?
+                                </a></li><li class="item   " id="listItem126"><a href="/informations-sur-l-or/faq/guide-dachat-dor">
+                                    Guide d'achat d'Or
+                                </a></li><li class="item   " id="listItem124"><a href="/informations-sur-l-or/faq/histoire-et-symbolique-de-lor">
+                                    Histoire et symbolique de l’Or
+                                </a></li><li class="item   " id="listItem112"><a href="/informations-sur-l-or/faq/pourquoi-choisir-le-comptoir-national-de-lor-pour-acheter-de-lor">
+                                    Pourquoi choisir le Comptoir National de l’Or pour acheter de l’Or ?
+                                </a></li><li class="item   " id="listItem122"><a href="/informations-sur-l-or/faq/guide-des-professionnels-de-lor">
+                                    Guide des professionnels de l'Or
+                                </a></li><li class="item   " id="listItem111"><a href="/informations-sur-l-or/faq/lor-est-il-une-valeur-sure">
+                                    L’Or est il une valeur sûre ?
+                                </a></li><li class="item   " id="listItem121"><a href="/informations-sur-l-or/faq/la-production-dor-dans-le-monde">
+                                    La Production d'Or dans le monde
+                                </a></li><li class="item   " id="listItem107"><a href="/informations-sur-l-or/faq/y-a-t-il-un-delai-de-retractation">
+                                    Y a-t-il un délai de rétractation ?
+                                </a></li><li class="item   " id="listItem106"><a href="/informations-sur-l-or/faq/peut-on-payer-tout-montant-en-especes">
+                                    Peut-on payer tout montant en espèces ?
+                                </a></li><li class="item   " id="listItem105"><a href="/informations-sur-l-or/faq/quels-sont-les-moyens-de-paiement-acceptes-sur-goldfr">
+                                    Quels sont les moyens de paiement acceptés sur Gold.fr ?
+                                </a></li><li class="item   " id="listItem80"><a href="/informations-sur-l-or/faq/reglementation-relative-au-marche-de-lor">
+                                    Règlementation relative au marché de l'Or
+                                </a></li><li class="item  last " id="listItem76"><a href="/informations-sur-l-or/faq/applications-industrielles-de-lor">
+                                    Applications industrielles de l'Or
+                                </a></li></ul>

@@ -6,9 +6,9 @@ import sys
 import subprocess
 import logging
 import requests
-from xml.etree import ElementTree as ET
 import os
 from pathlib import Path
+from typing import List, Optional, Set
 from sitemap_handler import SitemapHandler
 
 
@@ -26,33 +26,6 @@ def get_redis_port():
 r = redis.Redis(host='localhost', port=get_redis_port(), db=0)
 
 # --- Fonctions pour le crawl web ---
-def get_urls_from_sitemap(base_url):
-    """Récupère les URLs depuis le sitemap."""
-    sitemap_urls = sitemap_search(base_url)
-    if sitemap_urls:
-        return sitemap_urls
-
-    sitemap_url = f"{base_url.rstrip('/')}/sitemap.xml"
-    logging.info(f"Lecture du sitemap : {sitemap_url}")
-    
-    try:
-        response = requests.get(sitemap_url)
-        response.raise_for_status()
-        
-        root = ET.fromstring(response.content)
-        ns = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
-        
-        urls = []
-        for url in root.findall('.//ns:url/ns:loc', ns):
-            urls.append(url.text)
-            logging.info(f"URL trouvée : {url.text}")
-        
-        logging.info(f"📍 {len(urls)} URLs trouvées dans le sitemap")
-        return urls
-        
-    except Exception as e:
-        logging.warning(f"Erreur lors de la lecture du sitemap : {e}")
-        return [base_url]
 
 def crawl_url(url):
     """Crawl une URL et retourne son contenu."""
@@ -138,37 +111,23 @@ def filter_sitemap_urls(urls, exclude_patterns):
     
     return filtered_urls
 
-def get_urls_from_sitemap(base_url, exclude_patterns=None):
-    """Récupère les URLs depuis le sitemap et applique le filtrage"""
-    sitemap_urls = sitemap_search(base_url)
-    if sitemap_urls:
-        logging.info(f"✅ {len(sitemap_urls)} URLs trouvées dans le sitemap")
-    else:
-        sitemap_url = f"{base_url.rstrip('/')}/sitemap.xml"
-        logging.info(f"Lecture du sitemap : {sitemap_url}")
-        
-        try:
-            response = requests.get(sitemap_url)
-            response.raise_for_status()
-            
-            root = ET.fromstring(response.content)
-            ns = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
-            
-            sitemap_urls = []
-            for url in root.findall('.//ns:url/ns:loc', ns):
-                sitemap_urls.append(url.text)
-            
-            logging.info(f"✅ {len(sitemap_urls)} URLs trouvées dans le sitemap")
-            
-        except Exception as e:
-            logging.warning(f"Erreur lors de la lecture du sitemap : {e}")
-            sitemap_urls = [base_url]
+
+
+def get_urls_from_sitemap(url: str, scope_url: Optional[str] = None, exclude_patterns=None) -> List[str]:
+    """Récupère les URLs depuis le sitemap"""
+    try:
+        base_url = "/".join(url.split("/")[:3])  # Extrait le domaine
+        handler = SitemapHandler(base_url, scope_url=scope_url)
+        urls = handler.discover_urls()
+
+        if exclude_patterns:
+            return filter_sitemap_urls(urls, exclude_patterns)
+        return urls
+
+    except Exception as e:
+        logging.error(f"Erreur lors du crawl du sitemap: {e}")
+        return [url]
     
-    # Appliquer le filtrage si des patterns sont définis
-    if exclude_patterns:
-        return filter_sitemap_urls(sitemap_urls, exclude_patterns)
-    
-    return sitemap_urls
 
 def should_exclude_url(url, patterns):
     """Vérifie si l'URL contient un des patterns à exclure"""
@@ -178,42 +137,42 @@ def should_exclude_url(url, patterns):
     return any(pattern.lower() in url_lower for pattern in patterns)
 
 
-def crawl_web(url, exclude_patterns=None, sitemap_url=None):
+def crawl_web(url, exclude_patterns=None):
     """Fonction principale pour le crawl web"""
     cleaned_url = url.split('//')[1].replace(':', '_').replace('.', '_').replace('/', '_')
     crawl_id = f"{cleaned_url}__{str(uuid.uuid4())}"
     
-    # Récupérer et filtrer les URLs du sitemap
-    urls = get_urls_from_sitemap(url, sitemap_url)
-    if exclude_patterns:
-        urls = filter_sitemap_urls(urls, exclude_patterns)
+    # Utiliser l'URL complète comme scope si c'est une URL de page
+    urls = get_urls_from_sitemap(url, scope_url=url, exclude_patterns=exclude_patterns)
     
-    stored_pages = 0
-    total_urls = len(urls)
-    
-    logging.info(f"""
-    🌐 Démarrage du crawl web:
-    • URL de base: {url}
-    • URLs à traiter: {total_urls}
-    • Patterns exclus: {exclude_patterns if exclude_patterns else 'Aucun'}
-    • Sitemap: {sitemap_url if sitemap_url else 'Auto-détection'}
-    """)
-    
-    for current_url in urls:
-        content = crawl_url(current_url)
-        if content and not should_exclude_url(current_url, exclude_patterns):
-            if save_to_redis(current_url, content, crawl_id):
-                stored_pages += 1
+    # Ajout du traitement des URLs
+    if not urls:
+        logging.error("❌ Aucune URL à crawler")
+        return None
         
-        if stored_pages % 10 == 0 or stored_pages == total_urls:
-            progress = (stored_pages/total_urls) * 100
+    processed = 0
+    for url in urls:
+        try:
+            content = crawl_url(url)
+            if content:
+                if save_to_redis(url, content, crawl_id, exclude_patterns):
+                    processed += 1
+                    
+        except Exception as e:
+            logging.error(f"Erreur lors du crawl de {url}: {e}")
+            continue
+            
+        # Log de progression
+        if processed % 10 == 0 or processed == len(urls):
             logging.info(f"""
-            📊 Progression: {stored_pages}/{total_urls} ({progress:.1f}%)
-            ✅ Pages stockées: {stored_pages}
+            📊 Progression:
+            • Pages traitées : {processed}/{len(urls)}
+            • Pourcentage : {(processed/len(urls))*100:.1f}%
             """)
     
-    return crawl_id
-
+    if processed > 0:
+        return crawl_id
+    return None
 
 def crawl_local(path):
     """Fonction principale pour le crawl local."""

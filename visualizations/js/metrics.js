@@ -44,30 +44,55 @@ class MetricsManager {
     calculateMetrics() {
         const data = this.graphRenderer.data;
         if (!data || !data.nodes || !data.links) return {};
-
+    
         const nodesCount = data.nodes.length;
         const linksCount = data.links.length;
         
-        // Calcul des liens bidirectionnels
-        const bidirectionalLinks = this.countBidirectionalLinks(data);
+        // Créer un Map pour une recherche plus rapide
+        const nodeConnections = new Map();
         
-        // Calcul des pages isolées
-        const orphanNodes = data.nodes.filter(node => 
-            !data.links.some(link => 
-                link.source.id === node.id || link.target.id === node.id
-            )
-        );
-
+        // Initialiser la Map avec tous les nœuds comme non connectés
+        data.nodes.forEach(node => {
+            nodeConnections.set(node.id, false);
+        });
+        
+        // Marquer les nœuds connectés
+        data.links.forEach(link => {
+            const sourceId = link.source.id || link.source;
+            const targetId = link.target.id || link.target;
+            
+            if (nodeConnections.has(sourceId)) {
+                nodeConnections.set(sourceId, true);
+            }
+            if (nodeConnections.has(targetId)) {
+                nodeConnections.set(targetId, true);
+            }
+        });
+        
+        // Compter les nœuds orphelins
+        let orphanCount = 0;
+        nodeConnections.forEach(isConnected => {
+            if (!isConnected) orphanCount++;
+        });
+        
+        const orphanPercentage = (orphanCount / nodesCount) * 100;
+    
+        console.log(`Métriques calculées : 
+            Nodes total: ${nodesCount}
+            Links total: ${linksCount}
+            Orphan count: ${orphanCount}
+            Orphan %: ${orphanPercentage.toFixed(2)}%`);
+    
         return {
             nodesCount,
             linksCount,
             density: this.calculateDensity(data),
             avgDepth: this.calculateAverageDepth(data),
-            orphanCount: orphanNodes.length,
-            orphanPercentage: (orphanNodes.length / nodesCount) * 100,
+            orphanCount,
+            orphanPercentage,
             components: this.countConnectedComponents(data),
-            bidirectionalCount: bidirectionalLinks,
-            bidirectionalPercentage: (bidirectionalLinks / linksCount) * 100,
+            bidirectionalCount: this.countBidirectionalLinks(data),
+            bidirectionalPercentage: (linksCount > 0 ? (this.countBidirectionalLinks(data) / linksCount) * 100 : 0),
             clustering: this.calculateClustering(data)
         };
     }

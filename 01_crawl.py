@@ -7,6 +7,10 @@ import subprocess
 import logging
 import requests
 import os
+import xml.etree.ElementTree as ET
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import time
 from pathlib import Path
 from typing import List, Optional, Set
 from sitemap_handler import SitemapHandler
@@ -82,7 +86,45 @@ def save_to_redis(identifier, content, crawl_id, exclude_patterns=None):
     except Exception as e:
         logging.error(f"Erreur lors du stockage de {identifier}: {e}")
         return False
+
+
+def crawl_url_with_selenium(url):
+    """Crawl une URL avec Selenium pour contourner la protection anti-bot"""
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    import time
     
+    options = Options()
+    options.add_argument('--headless')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-gpu')
+    
+    try:
+        driver = webdriver.Chrome(options=options)
+        driver.get(url)
+        
+        # Attendre que la page se charge (y compris les protections Cloudflare)
+        time.sleep(5)
+        
+        # Vérifier si la page contient un contenu réel (pas une page de blocage)
+        if "Access denied" in driver.page_source or "403 Forbidden" in driver.page_source:
+            logging.error(f"Accès bloqué pour {url} même avec Selenium")
+            return None
+            
+        # Extraire le contenu principal
+        content = driver.page_source
+        return content
+        
+    except Exception as e:
+        logging.error(f"Erreur Selenium pour {url}: {e}")
+        return None
+        
+    finally:
+        if 'driver' in locals():
+            driver.quit()
+
+
 def filter_sitemap_urls(urls, exclude_patterns):
     """Filtre les URLs du sitemap selon les patterns d'exclusion"""
     original_count = len(urls)
@@ -215,17 +257,25 @@ def crawl_web(url, exclude_patterns=None):
     processed = 0
     for url in urls:
         try:
-            content = crawl_url(url)
+            # Utiliser Selenium au lieu de trafilatura
+            content = crawl_url_with_selenium(url)
             if content:
-                if save_to_redis(url, content, crawl_id, exclude_patterns):
-                    processed += 1
+                # Extraire le texte principal avec trafilatura
+                extracted_content = trafilatura.extract(content)
+                if extracted_content:
+                    if save_to_redis(url, extracted_content, crawl_id, exclude_patterns):
+                        processed += 1
+                else:
+                    logging.warning(f"❌ Impossible d'extraire le contenu principal de {url}")
+            else:
+                logging.warning(f"❌ Échec du crawl de {url}")
                     
         except Exception as e:
             logging.error(f"Erreur lors du crawl de {url}: {e}")
             continue
             
         # Log de progression
-        if processed % 10 == 0 or processed == len(urls):
+        if processed % 5 == 0 or processed == len(urls):
             logging.info(f"""
             📊 Progression:
             • Pages traitées : {processed}/{len(urls)}

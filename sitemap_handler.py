@@ -20,7 +20,12 @@ class SitemapHandler:
         
         # Configuration du user-agent
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (compatible; SeoAnalyseBot/1.0)'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'max-age=0'
         })
 
     def _is_url_in_scope(self, url: str) -> bool:

@@ -112,11 +112,72 @@ def filter_sitemap_urls(urls, exclude_patterns):
     return filtered_urls
 
 
+def get_urls_from_local_sitemaps(base_url, sitemap_dir="sitemaps"):
+    """Lit et parse les fichiers sitemap.xml locaux"""
+    try:
+        sitemap_path = Path(sitemap_dir)
+        if not sitemap_path.exists():
+            logging.info(f"Dossier de sitemaps local {sitemap_dir} non trouvé")
+            return None
+            
+        # Chercher tous les fichiers XML
+        sitemap_files = list(sitemap_path.glob("*.xml"))
+        if not sitemap_files:
+            logging.info(f"Aucun fichier sitemap XML trouvé dans {sitemap_dir}")
+            return None
+            
+        logging.info(f"🗂️ {len(sitemap_files)} fichiers sitemap trouvés localement")
+        
+        all_urls = []
+        namespaces = {'sm': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+        
+        for sitemap_file in sitemap_files:
+            try:
+                logging.info(f"Analyse du sitemap local: {sitemap_file}")
+                tree = ET.parse(sitemap_file)
+                root = tree.getroot()
+                
+                # Vérifier s'il s'agit d'un sitemap index
+                sitemaps = root.findall('.//sm:sitemap/sm:loc', namespaces)
+                
+                if sitemaps:  # C'est un sitemap index, on ignore (complexité supplémentaire)
+                    logging.warning(f"Le fichier {sitemap_file} est un sitemap index, non supporté directement")
+                else:  # C'est un sitemap normal
+                    for url_elem in root.findall('.//sm:url/sm:loc', namespaces):
+                        url = url_elem.text
+                        # S'assurer que l'URL est dans le même domaine
+                        if url and (url.startswith(base_url) or url.startswith("/")):
+                            all_urls.append(url)
+            
+            except Exception as e:
+                logging.error(f"Erreur lors de l'analyse du fichier {sitemap_file}: {e}")
+                continue
+        
+        if all_urls:
+            logging.info(f"📄 {len(all_urls)} URLs extraites des sitemaps locaux")
+            return all_urls
+        return None
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de la lecture des sitemaps locaux: {e}")
+        return None
+    
+
 
 def get_urls_from_sitemap(url: str, scope_url: Optional[str] = None, exclude_patterns=None) -> List[str]:
-    """Récupère les URLs depuis le sitemap"""
+    """Récupère les URLs depuis le sitemap, en essayant d'abord les fichiers locaux"""
+    base_url = "/".join(url.split("/")[:3])  # Extrait le domaine
+    
+    # Essayer d'abord les fichiers sitemap locaux
+    local_urls = get_urls_from_local_sitemaps(base_url)
+    if local_urls:
+        logging.info("✅ Utilisation des sitemaps locaux")
+        if exclude_patterns:
+            return filter_sitemap_urls(local_urls, exclude_patterns)
+        return local_urls
+    
+    # Si pas de sitemap local, essayer via l'API Web
     try:
-        base_url = "/".join(url.split("/")[:3])  # Extrait le domaine
         handler = SitemapHandler(base_url, scope_url=scope_url)
         urls = handler.discover_urls()
 
@@ -127,7 +188,8 @@ def get_urls_from_sitemap(url: str, scope_url: Optional[str] = None, exclude_pat
     except Exception as e:
         logging.error(f"Erreur lors du crawl du sitemap: {e}")
         return [url]
-    
+
+
 
 def should_exclude_url(url, patterns):
     """Vérifie si l'URL contient un des patterns à exclure"""
